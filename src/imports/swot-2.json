@@ -1,0 +1,515 @@
+[
+	{
+		"statement_text": "The corrective maintenance request process is clearly defined and effective.",
+		"statement_id":1,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Corrective Maintenance"
+	},
+	{
+		"statement_text": "Corrective maintenance response times are tracked and reviewed for trends.",
+		"statement_id":2,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Corrective Maintenance"
+	},
+	{
+		"statement_text": "Service response expectations for clinical staff are formally defined and communicated.",
+		"statement_id":3,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Corrective Maintenance"
+	},
+	{
+		"statement_text": "The current CMMS coding structure for work order request, result, and fault support needed corrective maintenance reporting.",
+		"statement_id":4,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Corrective Maintenance"
+	},
+	{
+		"statement_text": "Corrective maintenance turnaround times are tracked and analyzed effectively.",
+		"statement_id":5,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Corrective Maintenance"
+	},
+	{
+		"statement_text": "Equipment risk classification, including life support, high-risk, and critical designations, is determined using a defined and consistently applied methodology.",
+		"statement_id":6,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Preventative Maintenance"
+	},
+	{
+		"statement_text": "3.	Device eligibility for an AEM program is determined using defined data elements and risk-scoring criteria.",
+		"statement_id":7,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Preventative Maintenance"
+	},
+	{
+		"statement_text": "Responsibility for performing risk classification on new devices entering the hospital is clearly assigned.",
+		"statement_id":8,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Preventative Maintenance"
+	},
+	{
+		"statement_text": "Assets included in an AEM program are clearly identified within the asset management system.",
+		"statement_id":9,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Preventative Maintenance"
+	},
+	{
+		"statement_text": "The department has an effective mechanism to monitor whether failure rates change after devices are placed in an AEM program.",
+		"statement_id":10,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Preventative Maintenance"
+	},
+	{
+		"statement_text": "Preventive maintenance workload is distributed evenly across available staff or work groups.",
+		"statement_id":11,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Preventative Maintenance"
+	},
+	{
+		"statement_text": "The department maintains the MEMP in a current state.",
+		"statement_id":12,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Regulatory Compliance"
+	},
+	{
+		"statement_text": "The department effectively follows the requirements of the MEMP.",
+		"statement_id":13,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Regulatory Compliance"
+	},
+	{
+		"statement_text": "Employees demonstrate understanding of their individual responsibilities for MEMP compliance.",
+		"statement_id":14,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Regulatory Compliance"
+	},
+	{
+		"statement_text": "Recalls and hazard alerts are managed through a closed-loop process that verifies completion and resolution.",
+		"statement_id":15,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Safety-Recalls and Hazards"
+	},
+	{
+		"statement_text": "The department is effectively notified when any new equipment (purchased, loaner, rental, demo, and patient-owned) is scheduled to enter the facility.",
+		"statement_id":16,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Equipment Planning and Acquiring New Assets"
+	},
+	{
+		"statement_text": "HTM is appropriately involved in projects, renovations, and buildouts.",
+		"statement_id":17,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Equipment Planning and Acquiring New Assets"
+	},
+	{
+		"statement_text": "The validation process for entering new equipment into the system is clearly defined and consistently followed.",
+		"statement_id":18,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Equipment Planning and Acquiring New Assets"
+	},
+	{
+		"statement_text": "Acquisition cost, Network connection details, including IP address, MAC address, operating system, and other required information, are documented consistently.",
+		"statement_id":19,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Equipment Planning and Acquiring New Assets"
+	},
+	{
+		"statement_text": "Documented labor is accurately captured and reviewed for trends across modality, technicians, and facilities.",
+		"statement_id":20,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Department Performance"
+	}
+	{
+		"statement_text": "Preventive maintenance and corrective maintenance labor times are benchmarked against industry standards or relevant external comparators.",
+		"statement_id":21,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Department Performance"
+	}
+	{
+		"statement_text": "Critical equipment downtime reports are reviewed and used to evaluate service performance.",
+		"statement_id":22,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Department Performance"
+	}
+	{
+		"statement_text": "Employee goals are reviewed periodically throughout the year.",
+		"statement_id":23,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "Employees clearly understand their daily and weekly performance responsibilities.",
+		"statement_id":24,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "Employees are able to communicate with supervisors about operational observations and improvement opportunities.",
+		"statement_id":25,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "The department has an effective orientation and onboarding process.",
+		"statement_id":26,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "The department has a career ladder that appropriately supports staff development.",
+		"statement_id":27,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "The department has a defined succession planning process.",
+		"statement_id":28,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "Employees understand how their roles contribute to the department’s mission, vision, and goals.",
+		"statement_id":29,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Employee Engagement"
+	}
+	{
+		"statement_text": "Ancillary costs, such as training, test equipment, implementation needs, and related expenses, are incorporated into replacement planning.",
+		"statement_id":30,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Capital Equipment Replacement Planning"
+	}
+	{
+		"statement_text": "Equipment replacement decisions are made using defined criteria and a consistent decision-making process.",
+		"statement_id":31,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Capital Equipment Replacement Planning"
+	}
+	{
+		"statement_text": "HTM plays a significant role in the organizations capital replacement planning process.",
+		"statement_id":32,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Capital Equipment Replacement Planning"
+	}
+	{
+		"statement_text": "Customer satisfaction surveys that assess all aspects of HTM service delivery are conducted on a regular basis",
+		"statement_id":33,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Customer Satisfaction"
+	}
+	{
+		"statement_text": "Customer satisfaction survey results are reviewed with an eye on continuous process improvement.",
+		"statement_id":34,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Customer Satisfaction"
+	}
+	{
+		"statement_text": "Poor customer satisfaction survey results translate into comprehensive action plans for remediation.",
+		"statement_id":35,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Customer Satisfaction"
+	}
+	{
+		"statement_text": "Department policies are well-documented and readily available.",
+		"statement_id":36,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Policies"
+	}
+	{
+		"statement_text": "Department policies are reviewed and updated on a regular annual schedule.",
+		"statement_id":37,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Policies"
+	}
+	{
+		"statement_text": "Employees consistently review and reaffirm applicable policies each year.",
+		"statement_id":38,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Policies"
+	}
+	{
+		"statement_text": "Policy compliance is consistently monitored and enforced.",
+		"statement_id":39,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Policies"
+	}
+	{
+		"statement_text": "Cost of service ratio is accurately determined and monitored.",
+		"statement_id":40,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Productivity"
+	}
+	{
+		"statement_text": "Cost of service ratio is analyzed by hospital, technician, device type, and comparable departments as applicable.",
+		"statement_id":41,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Productivity"
+	}
+	{
+		"statement_text": "The methodology for determining cost of service ratio is clearly defined and consistently applied.",
+		"statement_id":42,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Productivity"
+	}
+	{
+		"statement_text": "Ratios that fall outside of established norms are analyzed for root cause and remediation.",
+		"statement_id":43,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Productivity"
+	}
+	{
+		"statement_text": "Preventive maintenance completion benchmarks are established and monitored.",
+		"statement_id":44,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Productivity"
+	}
+	{
+		"statement_text": "Corrective maintenance completion benchmarks are established and monitored.",
+		"statement_id":45,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Productivity"
+	}
+	{
+		"statement_text": "The department has a clearly defined and effective communication policy for Staff, Customer, and Executive Leadership updates.",
+		"statement_id":46,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Communication"
+	}
+	{
+		"statement_text": "Safety rounds are used effectively to proactively identify nonconforming equipment.",
+		"statement_id":47,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Safety-EOC-Rounds"
+	}
+	{
+		"statement_text": "Safety rounds are a closed-loop process that assign nonconformance items for remediation and feedback to the appropriate committee.",
+		"statement_id":48,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Safety-EOC-Rounds"
+	}
+	{
+		"statement_text": "Inventory validation activities are performed periodically throughout the year.",
+		"statement_id":49,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Inventory Management"
+	}
+	{
+		"statement_text": "Device nomenclature, including manufacturer, model, and device category, is clean, standardized, and consistently applied. ",
+		"statement_id":50,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Inventory Management"
+	}
+	{
+		"statement_text": "The department has a current and clearly defined asset disposition process that includes transfers, sales, trade-ins, donations, and disposals.",
+		"statement_id":51,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Disposition Management"
+	}
+	{
+		"statement_text": "Assets are defined and prioritized for disposition using consistent criteria.",
+		"statement_id":52,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Disposition Management"
+	}
+	{
+		"statement_text": "Final asset dispositions are accurately tracked and recorded.",
+		"statement_id":53,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Disposition Management"
+	}
+	{
+		"statement_text": "The annual monetary value of all assets dispositions is tracked and reviewed.",
+		"statement_id":54,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Disposition Management"
+	}
+	{
+		"statement_text": "The parts ordering process is clearly defined and effectively addresses centralized and decentralized purchasing responsibilities.",
+		"statement_id":55,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "Parts usage and costs are accurately tracked and reviewed.",
+		"statement_id":56,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "Parts needs for preventive maintenance work are forecasted using a defined process.",
+		"statement_id":57,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "Equipment downtime attributable to waiting for parts is tracked and analyzed.",
+		"statement_id":58,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "Ancillary parts costs, including rush shipping and related expenses, are tracked and reviewed.",
+		"statement_id":59,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "Part requests are aggregated by vendor.",
+		"statement_id":60,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "Parts quality relative to DOAs, late part deliveries, wrong part deliveries, and premature failures are assessed on an ongoing basis.",
+		"statement_id":61,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Parts Management"
+	}
+	{
+		"statement_text": "User-related error trends are tracked and analyzed by model, department, or other relevant category.",
+		"statement_id":62,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Safety-User Error and Patient Incidents"
+	}
+	{
+		"statement_text": "User-related error trends are escalated to nursing, nursing education, or other appropriate stakeholders through a defined notification process.",
+		"statement_id":63,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Safety-User Error and Patient Incidents"
+	}
+	{
+		"statement_text": "The department participates appropriately in Risk Management’s annual FMEA process.",
+		"statement_id":64,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Safety-User Error and Patient Incidents"
+	}
+	{
+		"statement_text": "Equipment, including disposables, involved in a patient incident follows a defined and effective process for investigation and root cause analysis.",
+		"statement_id":65,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Safety-User Error and Patient Incidents"
+	}
+	{
+		"statement_text": "The process for purchasing new and renewing existing service contracts is clearly defined and effective.",
+		"statement_id":66,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "HTM is appropriately represented in service contract decision-making.",
+		"statement_id":67,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "Service contract information is accurately maintained and identifiable in the current CMMS.",
+		"statement_id":68,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "Service vendors are evaluated to ensure they meet applicable regulatory requirements.",
+		"statement_id":69,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "Vendor service performance is reviewed to determine overall satisfaction and effectiveness.",
+		"statement_id":70,
+		"swot_domain": "external",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "Completed vendor service activities are received, documented, and tracked consistently.",
+		"statement_id":71,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "Contract value analysis processes effectively support decisions about contracted versus in-house service.",
+		"statement_id":72,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Service Vendor Compliance-Contract Management"
+	}
+	{
+		"statement_text": "HTM is appropriately involved in any and all technology management opportunities in your organization.",
+		"statement_id":73,
+		"swot_domain": "internal",
+		"score_direction": "positive",
+		"theme": "Other CE Roles"
+	}
+	
+	
+]

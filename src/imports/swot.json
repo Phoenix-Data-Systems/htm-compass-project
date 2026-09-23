@@ -1,0 +1,70 @@
+{
+	statement_text: "The corrective maintenance request process is clearly defined and effective";
+	statement_id:001;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "Corrective maintenance response times are tracked and reviewed for trends";
+	statement_id:002;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "The process for requesting service after hours and on weekends is clearly defined and effective";
+	statement_id:003;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "The current coding structure and hierarchy support needed corrective maintenance reporting";
+	statement_id:004;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "Corrective maintenance turnaround times are tracked and analyzed effectively";
+	statement_id:005;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "Equipment risk classification, including life support, high-risk, and critical designations, is determined using a defined and consistently applied methodology";
+	statement_id:006;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}  
+{
+	statement_text: "Equipment risk classification criteria and any associated scoring formula are clearly documented";
+	statement_id:007;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Responsibility for performing risk classification on new devices entering the hospital is clearly assigned";
+	statement_id:008;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Assets included in an AEM program are clearly identified within the asset management system";
+	statement_id:009;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Preventive maintenance scheduling is consistent and aligned with regulatory requirements";
+	statement_id:010;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}

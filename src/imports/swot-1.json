@@ -1,0 +1,140 @@
+{
+	statement_text: "The corrective maintenance request process is clearly defined and effective";
+	statement_id:001;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "Corrective maintenance response times are tracked and reviewed for trends";
+	statement_id:002;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "The process for requesting service after hours and on weekends is clearly defined and effective";
+	statement_id:003;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "The current coding structure and hierarchy support needed corrective maintenance reporting";
+	statement_id:004;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "Corrective maintenance turnaround times are tracked and analyzed effectively";
+	statement_id:005;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Corrective Maintenance";
+}
+{
+	statement_text: "Equipment risk classification, including life support, high-risk, and critical designations, is determined using a defined and consistently applied methodology";
+	statement_id:006;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}  
+{
+	statement_text: "Equipment risk classification criteria and any associated scoring formula are clearly documented";
+	statement_id:007;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Responsibility for performing risk classification on new devices entering the hospital is clearly assigned";
+	statement_id:008;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Assets included in an AEM program are clearly identified within the asset management system";
+	statement_id:009;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Preventive maintenance scheduling is consistent and aligned with regulatory requirements";
+	statement_id:010;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Preventive maintenance and corrective maintenance labor times are benchmarked against industry standards or relevant external comparators";
+	statement_id:011;
+	swot_domain: "external";
+	score_direction: "positive";
+	theme: "Preventative Maintenance";
+}
+{
+	statement_text: "Parts aggregators are used through a defined process when appropriate";
+	statement_id:012;
+	swot_domain: "external";
+	score_direction: "positive";
+	theme: "Parts Management";
+}
+{
+	statement_text: "Service contract negotiations are leveraged effectively to support staff training opportunities";
+	statement_id:013;
+	swot_domain: "external";
+	score_direction: "positive";
+	theme: "Contract Management";
+}
+{
+	statement_text: "Service vendors are evaluated to ensure they meet applicable regulatory requirements";
+	statement_id:014;
+	swot_domain: "external";
+	score_direction: "positive";
+	theme: "Contract Management";
+}
+{
+	statement_text: "Vendor service performance is reviewed to determine overall satisfaction and effectiveness";
+	statement_id:015;
+	swot_domain: "external";
+	score_direction: "positive";
+	theme: "Contract Management";
+}
+{
+	statement_text: "The organization evaluates the relative value of service contracts compared with in-house service";
+	statement_id:016;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Contract Management";
+}
+{
+	statement_text: "The equipment database accurately reflects equipment currently in use and located in the facility";
+	statement_id:017;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Inventory Management";
+}
+{
+	statement_text: "Employees interact with the CMMS in a consistent and effective manner";
+	statement_id:018;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Productivity";
+}
+{
+	statement_text: "CMMS workflows support accurate documentation, tracking, and completion of maintenance activities";
+	statement_id:019;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Productivity";
+}
+{
+	statement_text: "Preventive maintenance completion benchmarks are established and monitored";
+	statement_id:020;
+	swot_domain: "internal";
+	score_direction: "positive";
+	theme: "Productivity";
+}
