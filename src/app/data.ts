@@ -231,15 +231,8 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-/** Hashes name, email, and jobTitle together — none are stored in plaintext. */
-export function generateAnonymousId(name: string, email: string, jobTitle: string): string {
-  const str = (name + email + jobTitle).toLowerCase();
-  let hash = 5381;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
-    hash = hash >>> 0;
-  }
-  return `ANON-${hash.toString(36).toUpperCase().padStart(6, "0")}`;
+export function generateAnonymousId(): string {
+  return `ANON-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 }
 
 /** Fisher-Yates shuffle — returns all question IDs in random order. */

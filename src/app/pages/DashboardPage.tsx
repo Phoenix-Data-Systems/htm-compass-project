@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useParams, Link } from "react-router";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
@@ -14,7 +15,7 @@ import {
   type QuestionStat,
 } from "../data";
 import { clsx } from "clsx";
-import { Building2, Users, Copy, Check, Home, TrendingUp, TrendingDown } from "lucide-react";
+import { Building2, Users, Copy, Check, Home, TrendingUp, TrendingDown, FileDown } from "lucide-react";
 
 function TrendIcon({ avg }: { avg: number }) {
   if (avg > 3.5) return <TrendingUp className="w-4 h-4 text-emerald-600" />;
@@ -165,6 +166,56 @@ export default function DashboardPage() {
   const [records, setRecords] = useState<SurveyRecord[]>([]);
   const [copied, setCopied] = useState(false);
   const [activeTag, setActiveTag] = useState<SWOTTag>("strengths");
+  const [exporting, setExporting] = useState(false);
+  const [pdfMode, setPdfMode] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  async function handleExportPdf() {
+    if (!printRef.current) return;
+    setExporting(true);
+    // Expand all four SWOT tag tables so they appear in the PDF.
+    // flushSync forces the DOM update to complete before we proceed.
+    flushSync(() => setPdfMode(true));
+    // Give the browser one tick to apply styles before capture.
+    await new Promise<void>((resolve) => setTimeout(resolve, 80));
+    try {
+      // dom-to-image-more uses SVG foreignObject rendering (the browser's own engine),
+      // so it handles oklch and all modern CSS that html2canvas can't parse.
+      const [{ default: domtoimage }, { default: jsPDF }] = await Promise.all([
+        import("dom-to-image-more"),
+        import("jspdf"),
+      ]);
+
+      const dataUrl = await (domtoimage as any).toPng(printRef.current, {
+        scale: 2,
+        bgcolor: "#ffffff",
+      });
+
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = dataUrl;
+      });
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (img.naturalHeight * imgW) / img.naturalWidth;
+      let yPos = 0;
+      let remaining = imgH;
+      while (remaining > 0) {
+        pdf.addImage(dataUrl, "PNG", 0, -yPos, imgW, imgH);
+        remaining -= pageH;
+        if (remaining > 0) { pdf.addPage(); yPos += pageH; }
+      }
+      pdf.save(`${hospitalSlug ?? "dashboard"}-swot-report.pdf`);
+    } finally {
+      setPdfMode(false);
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (!hospitalSlug) return;
@@ -262,6 +313,85 @@ export default function DashboardPage() {
   const activeTagSummary = tagSummaries.find((t) => t.tag === activeTag);
   const activeMeta = SWOT_META[activeTag];
 
+  function renderTagTable(tag: SWOTTag) {
+    const meta = SWOT_META[tag];
+    const tagSummary = tagSummaries.find((t) => t.tag === tag);
+    return (
+      <div key={tag} className="bg-white rounded-2xl border border-border overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-border" style={{ backgroundColor: `${meta.hexColor}12` }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: meta.hexColor }}>
+            {tag[0].toUpperCase()}
+          </div>
+          <div>
+            <h4 className="font-semibold text-foreground text-sm">{meta.label} — Tagged Questions</h4>
+            <p className="text-xs text-muted-foreground">{tagSummary?.questions.length ?? 0} questions · {records.length} respondents</p>
+          </div>
+        </div>
+        {(tagSummary?.questions.length ?? 0) === 0 ? (
+          <div className="px-6 py-10 text-center text-muted-foreground text-sm">
+            No questions currently tagged as {meta.label}. More responses may shift the averages.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="text-left px-6 py-3 text-xs text-muted-foreground font-medium w-16">ID</th>
+                  <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Question</th>
+                  <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-20">Avg</th>
+                  <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-20">Median</th>
+                  <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-16">Min</th>
+                  <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-16">Max</th>
+                  <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium w-32">Distribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tagSummary?.questions.map((qs: QuestionStat) => {
+                  const avg = qs.stats.avg;
+                  const fillPct = ((avg - 1) / 5) * 100;
+                  return (
+                    <tr key={qs.question.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                      <td className="px-6 py-4 text-xs font-mono font-semibold text-muted-foreground">{qs.question.id}</td>
+                      <td className="px-4 py-4 text-sm text-foreground max-w-xs">
+                        <p className="leading-relaxed">{qs.question.text}</p>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          <span className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{qs.question.theme}</span>
+                          <span className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{qs.question.classification}</span>
+                          {qs.scores.length > 0 && (
+                            <span className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: INTENSITY_META[qs.intensity].color }}>
+                              {INTENSITY_META[qs.intensity].label}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="font-bold text-base" style={{ color: meta.hexColor, fontFamily: "'DM Mono', monospace" }}>
+                          {qs.stats.count > 0 ? Math.round(avg) : "—"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center font-mono text-sm text-foreground">{qs.stats.count > 0 ? Math.round(qs.stats.median) : "—"}</td>
+                      <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">{qs.stats.count > 0 ? qs.stats.min : "—"}</td>
+                      <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">{qs.stats.count > 0 ? qs.stats.max : "—"}</td>
+                      <td className="px-4 py-4">
+                        {qs.stats.count > 0 ? (
+                          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${fillPct}%`, backgroundColor: meta.hexColor, opacity: 0.8 }} />
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No data</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const dashboardUrl = `${window.location.origin}/results/${hospitalSlug}`;
 
   function copyLink() {
@@ -351,12 +481,21 @@ export default function DashboardPage() {
               >
                 <Home className="w-3.5 h-3.5" /> Home
               </Link>
+              <button
+                onClick={handleExportPdf}
+                disabled={exporting}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-white transition-all hover:opacity-90 disabled:opacity-60"
+                style={{ backgroundColor: "#3292BE" }}
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                {exporting ? "Exporting…" : "Export PDF"}
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+      <main ref={printRef} className="max-w-6xl mx-auto px-6 py-10 space-y-10">
 
         {/* ── Section 1: Hero KPI Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -708,151 +847,55 @@ export default function DashboardPage() {
         {/* Per-tag question breakdown */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3
-              className="text-base font-semibold text-foreground"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
+            <h3 className="text-base font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', serif" }}>
               Questions by SWOT Category
             </h3>
           </div>
-          {/* Tag selector */}
-          <div className="flex gap-2 mb-5 flex-wrap">
-            {SWOT_TAGS.map((tag) => {
-              const meta = SWOT_META[tag];
-              const isActive = activeTag === tag;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => setActiveTag(tag)}
-                  className={clsx(
-                    "rounded-lg px-4 py-2 text-xs font-semibold transition-all border-2",
-                    isActive
-                      ? "text-white border-transparent"
-                      : clsx("bg-white", meta.color, meta.borderColor)
-                  )}
-                  style={isActive ? { backgroundColor: meta.hexColor, borderColor: meta.hexColor } : {}}
-                >
-                  {meta.label}
-                  <span className="ml-1.5 opacity-75">
-                    ({tagSummaries.find((t) => t.tag === tag)?.questions.length ?? 0})
-                  </span>
-                </button>
-              );
-            })}
-          </div>
 
-          {/* Description */}
-          <p className="text-xs text-muted-foreground mb-4">{activeMeta.description}</p>
-
-          {/* Questions table */}
-          <div className="bg-white rounded-2xl border border-border overflow-hidden">
-            <div
-              className="flex items-center gap-3 px-6 py-4 border-b border-border"
-              style={{ backgroundColor: `${activeMeta.hexColor}12` }}
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"
-                style={{ backgroundColor: activeMeta.hexColor }}
-              >
-                {activeTag[0].toUpperCase()}
-              </div>
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">
-                  {activeMeta.label} — Tagged Questions
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  {activeTagSummary?.questions.length ?? 0} questions · {records.length} respondents
-                </p>
-              </div>
+          {/* Tab selector — hidden during PDF export */}
+          {!pdfMode && (
+            <div className="flex gap-2 mb-5 flex-wrap">
+              {SWOT_TAGS.map((tag) => {
+                const meta = SWOT_META[tag];
+                const isActive = activeTag === tag;
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => setActiveTag(tag)}
+                    className={clsx(
+                      "rounded-lg px-4 py-2 text-xs font-semibold transition-all border-2",
+                      isActive ? "text-white border-transparent" : clsx("bg-white", meta.color, meta.borderColor)
+                    )}
+                    style={isActive ? { backgroundColor: meta.hexColor, borderColor: meta.hexColor } : {}}
+                  >
+                    {meta.label}
+                    <span className="ml-1.5 opacity-75">({tagSummaries.find((t) => t.tag === tag)?.questions.length ?? 0})</span>
+                  </button>
+                );
+              })}
             </div>
+          )}
 
-            {(activeTagSummary?.questions.length ?? 0) === 0 ? (
-              <div className="px-6 py-10 text-center text-muted-foreground text-sm">
-                No questions currently tagged as {activeMeta.label}. More responses may shift the averages.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40">
-                      <th className="text-left px-6 py-3 text-xs text-muted-foreground font-medium w-16">ID</th>
-                      <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Question</th>
-                      <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-20">Avg</th>
-                      <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-20">Median</th>
-                      <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-16">Min</th>
-                      <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-16">Max</th>
-                      <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium w-32">Distribution</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeTagSummary?.questions.map((qs: QuestionStat) => {
-                      const avg = qs.stats.avg;
-                      const fillPct = ((avg - 1) / 5) * 100;
-                      return (
-                        <tr key={qs.question.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                          <td className="px-6 py-4 text-xs font-mono font-semibold text-muted-foreground">
-                            {qs.question.id}
-                          </td>
-                          <td className="px-4 py-4 text-sm text-foreground max-w-xs">
-                            <p className="leading-relaxed">{qs.question.text}</p>
-                            <div className="flex flex-wrap gap-1 mt-1.5">
-                              <span className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                {qs.question.theme}
-                              </span>
-                              <span className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                {qs.question.classification}
-                              </span>
-                              {qs.scores.length > 0 && (
-                                <span
-                                  className="inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded text-white"
-                                  style={{ backgroundColor: INTENSITY_META[qs.intensity].color }}
-                                >
-                                  {INTENSITY_META[qs.intensity].label}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                            <span
-                              className="font-bold text-base"
-                              style={{ color: activeMeta.hexColor, fontFamily: "'DM Mono', monospace" }}
-                            >
-                              {qs.stats.count > 0 ? Math.round(avg) : "—"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-center font-mono text-sm text-foreground">
-                            {qs.stats.count > 0 ? Math.round(qs.stats.median) : "—"}
-                          </td>
-                          <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">
-                            {qs.stats.count > 0 ? qs.stats.min : "—"}
-                          </td>
-                          <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">
-                            {qs.stats.count > 0 ? qs.stats.max : "—"}
-                          </td>
-                          <td className="px-4 py-4">
-                            {qs.stats.count > 0 ? (
-                              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{
-                                    width: `${fillPct}%`,
-                                    backgroundColor: activeMeta.hexColor,
-                                    opacity: 0.8,
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No data</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          {pdfMode ? (
+            /* PDF export: all four categories expanded */
+            <div className="flex flex-col gap-8">
+              {SWOT_TAGS.map((tag) => (
+                <div key={tag}>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: SWOT_META[tag].hexColor }}>
+                    {SWOT_META[tag].label}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">{SWOT_META[tag].description}</p>
+                  {renderTagTable(tag)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Normal view: single active tab */
+            <>
+              <p className="text-xs text-muted-foreground mb-4">{activeMeta.description}</p>
+              {renderTagTable(activeTag)}
+            </>
+          )}
         </div>
 
         {/* Respondents table */}

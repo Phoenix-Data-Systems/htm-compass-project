@@ -20,8 +20,6 @@ export default function LandingPage() {
     organization: "",
     hospital: "",
     department: "",
-    name: "",
-    email: "",
     jobTitle: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -33,9 +31,6 @@ export default function LandingPage() {
     if (!form.organization.trim()) e.organization = "Organization is required";
     if (!form.hospital.trim()) e.hospital = "Hospital / Facility is required";
     if (!form.department.trim()) e.department = "Department is required";
-    if (!form.name.trim()) e.name = "Participant name is required";
-    if (!form.email.trim()) e.email = "Participant email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Valid email is required";
     if (!form.jobTitle.trim()) e.jobTitle = "Job title is required";
     return e;
   }
@@ -45,7 +40,7 @@ export default function LandingPage() {
     if (Object.keys(e).length) { setErrors(e); return; }
     setLoading(true);
     const token = generateToken();
-    const anonymousId = generateAnonymousId(form.name, form.email, form.jobTitle);
+    const anonymousId = generateAnonymousId();
     const hospitalSlug = slugify(form.hospital);
     const questionIds = selectRandomQuestions();
     saveRecord({
@@ -157,7 +152,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Anonymous &amp; Confidential</p>
-                  <p className="text-xs mt-0.5">Your name, email, and job title are masked and never displayed in results</p>
+                  <p className="text-xs mt-0.5">Only an anonymous participant ID appears in results — no personal information is stored</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -216,7 +211,7 @@ export default function LandingPage() {
                 Begin Your Assessment
               </h3>
               <p className="text-sm text-muted-foreground mb-7">
-                Your identity is masked before responses are stored. Only your anonymous participant ID appears in results.
+                Responses are stored anonymously. Only a generated participant ID appears in results.
               </p>
 
               <div className="flex flex-col gap-5">
@@ -225,40 +220,35 @@ export default function LandingPage() {
                   {field("hospital", "Hospital / Facility", "e.g. Mercy General Hospital")}
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-foreground/80">Department / Unit</label>
-                  <div className="relative">
-                    <select
-                      value={form.department}
-                      onChange={(e) => {
-                        setForm((f) => ({ ...f, department: e.target.value }));
-                        setErrors((er) => { const n = { ...er }; delete n.department; return n; });
-                      }}
-                      className={clsx(
-                        "w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-foreground outline-none transition-all appearance-none",
-                        "focus:ring-2 focus:ring-primary/30 focus:border-primary",
-                        errors.department ? "border-destructive ring-1 ring-destructive/30" : "border-border",
-                        !form.department && "text-muted-foreground"
-                      )}
-                    >
-                      <option value="" disabled>Select a department…</option>
-                      <option value="Clinical Engineering">Clinical Engineering</option>
-                      <option value="Facilities Plant">Facilities Plant</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  </div>
-                  {errors.department && <p className="text-xs text-destructive">{errors.department}</p>}
-                </div>
-
                 <div className="border-t border-border pt-5">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-                    Participant Information (Masked Before Storage)
+                    Participant Information
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {field("name", "Full Name", "Your full name")}
-                    {field("email", "Email Address", "your@email.com", "email")}
-                  </div>
-                  <div className="mt-5">
+                  <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-foreground/80">Department / Unit</label>
+                      <div className="relative">
+                        <select
+                          value={form.department}
+                          onChange={(e) => {
+                            setForm((f) => ({ ...f, department: e.target.value }));
+                            setErrors((er) => { const n = { ...er }; delete n.department; return n; });
+                          }}
+                          className={clsx(
+                            "w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-foreground outline-none transition-all appearance-none",
+                            "focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                            errors.department ? "border-destructive ring-1 ring-destructive/30" : "border-border",
+                            !form.department && "text-muted-foreground"
+                          )}
+                        >
+                          <option value="" disabled>Select a department…</option>
+                          <option value="Clinical Engineering">Clinical Engineering</option>
+                          <option value="Facilities Plant">Facilities Plant</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      </div>
+                      {errors.department && <p className="text-xs text-destructive">{errors.department}</p>}
+                    </div>
                     {field("jobTitle", "Job Title", "e.g. Senior BMET")}
                   </div>
                 </div>
@@ -277,7 +267,7 @@ export default function LandingPage() {
                 </button>
 
                 <p className="text-center text-xs text-muted-foreground">
-                  A unique link is generated for your session. You can return to it if needed.
+                  Your responses are anonymous. A unique session link is generated on start.
                 </p>
               </div>
             </div>
