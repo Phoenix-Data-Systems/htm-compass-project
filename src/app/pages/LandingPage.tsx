@@ -5,11 +5,10 @@ import {
   generateAnonymousId,
   slugify,
   saveRecord,
-  getAllHospitals,
   selectRandomQuestions,
   TOTAL_QUESTIONS,
 } from "../data";
-import { Building2, ClipboardList, BarChart3, Shield, ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
+import { ClipboardList, BarChart3, Shield, ChevronRight, ChevronDown } from "lucide-react";
 import { clsx } from "clsx";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
@@ -24,8 +23,6 @@ export default function LandingPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const hospitals = getAllHospitals();
-
   function validate() {
     const e: Record<string, string> = {};
     if (!form.organization.trim()) e.organization = "Organization is required";
@@ -175,30 +172,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Existing hospital dashboards */}
-            {hospitals.length > 0 && (
-              <div className="rounded-xl border border-border bg-white p-5">
-                <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-accent" />
-                  Active Dashboards
-                </p>
-                <div className="flex flex-col gap-2">
-                  {hospitals.slice(0, 5).map((h) => (
-                    <a
-                      key={h.slug}
-                      href={`/results/${h.slug}`}
-                      className="flex items-center justify-between rounded-lg px-3 py-2.5 bg-muted hover:bg-secondary transition-colors text-sm group"
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{h.name}</p>
-                        <p className="text-xs text-muted-foreground">{h.count} response{h.count !== 1 ? "s" : ""}</p>
-                      </div>
-                      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-accent transition-colors" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right: Form */}
