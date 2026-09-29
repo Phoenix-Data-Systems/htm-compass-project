@@ -301,6 +301,47 @@ export function getAllHospitals(): { slug: string; name: string; count: number }
     .filter((h) => h.count > 0);
 }
 
+// ---- Org registration (interest form) ----
+
+export interface OrgRecord {
+  orgId: string;
+  organization: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactJobTitle: string;
+  facilities: number;
+  createdAt: string;
+}
+
+const ORG_STORAGE_KEY = "swot_orgs_v1";
+
+function readOrgs(): Record<string, OrgRecord> {
+  try {
+    const raw = localStorage.getItem(ORG_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {};
+}
+
+function writeOrgs(orgs: Record<string, OrgRecord>) {
+  localStorage.setItem(ORG_STORAGE_KEY, JSON.stringify(orgs));
+}
+
+export function saveOrg(org: OrgRecord) {
+  const orgs = readOrgs();
+  orgs[org.orgId] = org;
+  writeOrgs(orgs);
+}
+
+export function getOrg(orgId: string): OrgRecord | null {
+  return readOrgs()[orgId] ?? null;
+}
+
+export function generateOrgId(): string {
+  return crypto.randomUUID().split("-")[0].toUpperCase();
+}
+
 // ---- Stats ----
 
 export function calcStats(values: number[]) {

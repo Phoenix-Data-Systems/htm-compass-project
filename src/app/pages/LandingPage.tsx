@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
 import {
   generateToken,
   generateAnonymousId,
   slugify,
   saveRecord,
+  getOrg,
   selectRandomQuestions,
   TOTAL_QUESTIONS,
 } from "../data";
@@ -15,6 +16,7 @@ import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { orgId } = useParams<{ orgId: string }>();
   const [form, setForm] = useState({
     organization: "",
     hospital: "",
@@ -23,6 +25,13 @@ export default function LandingPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill organization from the org registration record
+  useEffect(() => {
+    if (!orgId) return;
+    const org = getOrg(orgId);
+    if (org) setForm((f) => ({ ...f, organization: org.organization }));
+  }, [orgId]);
   function validate() {
     const e: Record<string, string> = {};
     if (!form.organization.trim()) e.organization = "Organization is required";
@@ -60,7 +69,8 @@ export default function LandingPage() {
     key: keyof typeof form,
     label: string,
     placeholder: string,
-    type = "text"
+    type = "text",
+    readOnly = false
   ) {
     return (
       <div className="flex flex-col gap-1.5">
@@ -68,16 +78,19 @@ export default function LandingPage() {
         <input
           type={type}
           value={form[key]}
-          onChange={(e) => {
+          readOnly={readOnly}
+          onChange={readOnly ? undefined : (e) => {
             setForm((f) => ({ ...f, [key]: e.target.value }));
             setErrors((er) => { const n = { ...er }; delete n[key]; return n; });
           }}
           placeholder={placeholder}
           className={clsx(
-            "w-full rounded-lg border bg-white px-4 py-3 text-sm text-foreground outline-none transition-all",
+            "w-full rounded-lg border px-4 py-3 text-sm text-foreground outline-none transition-all",
             "placeholder:text-muted-foreground",
-            "focus:ring-2 focus:ring-primary/30 focus:border-primary",
-            errors[key] ? "border-destructive ring-1 ring-destructive/30" : "border-border"
+            readOnly
+              ? "bg-muted border-border cursor-default text-foreground/70"
+              : "bg-white focus:ring-2 focus:ring-primary/30 focus:border-primary",
+            !readOnly && errors[key] ? "border-destructive ring-1 ring-destructive/30" : "border-border"
           )}
         />
         {errors[key] && <p className="text-xs text-destructive">{errors[key]}</p>}
@@ -189,7 +202,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col gap-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {field("organization", "Organization", "e.g. Regional Health Network")}
+                  {field("organization", "Organization", "e.g. Regional Health Network", "text", !!orgId)}
                   {field("hospital", "Hospital / Facility", "e.g. Mercy General Hospital")}
                 </div>
 
