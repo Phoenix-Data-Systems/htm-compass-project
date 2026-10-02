@@ -5,18 +5,21 @@ import {
   generateAnonymousId,
   slugify,
   saveRecord,
-  getOrg,
   selectRandomQuestions,
   TOTAL_QUESTIONS,
 } from "../data";
 import { ClipboardList, BarChart3, Shield, ChevronRight, ChevronDown } from "lucide-react";
 import { clsx } from "clsx";
+import {
+  createParticipant,
+  getSurveyOrganization
+} from "../api";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { orgId } = useParams<{ orgId: string }>();
+  const { surveyKey } = useParams<{ surveyKey: string }>();
   const [form, setForm] = useState({
     organization: "",
     hospital: "",
@@ -26,12 +29,42 @@ export default function LandingPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  // Pre-fill organization from the org registration record
+  // Pre-fill organization from the survey registration
   useEffect(() => {
-    if (!orgId) return;
-    const org = getOrg(orgId);
-    if (org) setForm((f) => ({ ...f, organization: org.organization }));
-  }, [orgId]);
+    if (!surveyKey) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadOrganization() {
+      try {
+        const organization = await getSurveyOrganization(surveyKey);
+
+        if (!cancelled) {
+          setForm((current) => ({
+            ...current,
+            organization
+          }));
+        }
+      } catch (error) {
+        console.error("Unable to load organization:", error);
+
+        if (!cancelled) {
+          setErrors((current) => ({
+            ...current,
+            organization: "Unable to load organization"
+          }));
+        }
+      }
+    }
+
+    void loadOrganization();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [surveyKey]);
   function validate() {
     const e: Record<string, string> = {};
     if (!form.organization.trim()) e.organization = "Organization is required";
@@ -41,28 +74,67 @@ export default function LandingPage() {
     return e;
   }
 
-  function handleBegin() {
+  async function handleBegin() {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+
+    if (!surveyKey) {
+      setErrors((current) => ({
+        ...current,
+        organization: "Invalid assessment link"
+      }));
+      return;
+    }
+
     setLoading(true);
-    const token = generateToken();
-    const anonymousId = generateAnonymousId();
-    const hospitalSlug = slugify(form.hospital);
-    const questionIds = selectRandomQuestions();
-    saveRecord({
-      participant: {
-        token,
-        anonymousId,
-        organization: form.organization.trim(),
-        hospital: form.hospital.trim(),
-        hospitalSlug,
+
+    try {
+const token = generateToken();
+      const anonymousId = generateAnonymousId();
+
+      const participantResult = await createParticipant(surveyKey, {
+        participant: anonymousId,
+        facilityName: form.hospital.trim(),
+        role: form.jobTitle.trim(),
+        email: null,
         department: form.department.trim(),
-      },
-      answers: {},
-      completed: false,
-      questionIds,
-    });
-    navigate(`/survey/${token}`);
+        notes: null
+      });
+
+      const hospitalSlug = slugify(participantResult.facilityName);
+      const questionIds = selectRandomQuestions();
+
+      saveRecord({
+        surveyKey,
+        participantId: participantResult.id,
+        facilityId: participantResult.facilityId,
+        participant: {
+          token,
+          anonymousId,
+          organization: form.organization.trim(),
+          hospital: participantResult.facilityName,
+          hospitalSlug,
+          department: form.department.trim()
+        },
+        answers: {},
+        completed: false,
+        questionIds
+      });
+
+      navigate(`/survey/${token}`);
+    } catch (error) {
+      console.error("Unable to start survey:", error);
+
+      setErrors((current) => ({
+        ...current,
+        hospital: "Unable to start the survey. Please try again."
+      }));
+    } finally {
+      setLoading(false);
+    }
   }
 
   function field(
@@ -202,7 +274,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col gap-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {field("organization", "Organization", "e.g. Regional Health Network", "text", !!orgId)}
+                  {field("organization", "Organization", "e.g. Regional Health Network", "text", !!surveyKey)}
                   {field("hospital", "Hospital / Facility", "e.g. Mercy General Hospital")}
                 </div>
 

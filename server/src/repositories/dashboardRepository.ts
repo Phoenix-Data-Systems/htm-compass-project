@@ -13,7 +13,7 @@ export interface DashboardSummary {
 
 export async function getDashboardSummary(
   surveyKey: string,
-  facilityId: number
+  facilityId: number | null = null
 ): Promise<DashboardSummary | null> {
   const pool = await getDatabasePool();
 
@@ -65,7 +65,7 @@ export async function getDashboardSummary(
           INNER JOIN dbo.Participants p
               ON p.ID = r.ParticipantID
              AND p.Active = 1
-             AND p.FacilityID = @facilityId
+             AND (@facilityId IS NULL OR p.FacilityID = @facilityId)
           INNER JOIN dbo.OrgFacilities f
               ON f.ID = p.FacilityID
              AND f.OrgID = sqc.OrgID
@@ -193,7 +193,7 @@ export interface DashboardRespondent {
 
 export async function getDashboardRespondents(
   surveyKey: string,
-  facilityId: number
+  facilityId: number | null = null
 ): Promise<DashboardRespondent[]> {
   const pool = await getDatabasePool();
 
@@ -247,7 +247,7 @@ export async function getDashboardRespondents(
           INNER JOIN dbo.Participants p
               ON p.ID = r.ParticipantID
              AND p.Active = 1
-             AND p.FacilityID = @facilityId
+             AND (@facilityId IS NULL OR p.FacilityID = @facilityId)
           INNER JOIN dbo.OrgFacilities f
               ON f.ID = p.FacilityID
              AND f.OrgID = sqc.OrgID
@@ -288,7 +288,7 @@ export async function getDashboardRespondents(
       INNER JOIN dbo.Participants p
           ON p.ID = cp.ParticipantID
          AND p.Active = 1
-         AND p.FacilityID = @facilityId
+         AND (@facilityId IS NULL OR p.FacilityID = @facilityId)
       INNER JOIN dbo.OrgFacilities f
           ON f.ID = p.FacilityID
          AND f.OrgID = sc.OrgID

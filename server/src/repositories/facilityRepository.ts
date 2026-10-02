@@ -30,3 +30,39 @@ export async function getSurveyFacilities(
     name: String(row.Facility)
   }));
 }
+
+export interface DashboardFacility {
+  key: string;
+  name: string;
+}
+
+export async function getDashboardFacilities(
+  dashboardKey: string
+): Promise<DashboardFacility[]> {
+  const pool = await getDatabasePool();
+
+  const result = await pool
+    .request()
+    .input("dashboardKey", sql.UniqueIdentifier, dashboardKey)
+    .query(`
+      SELECT
+          f.FacilityKey,
+          f.Facility
+      FROM dbo.OrgSurveys os
+      INNER JOIN dbo.OrgFacilities f
+          ON f.OrgID = os.OrgID
+         AND f.Active = 1
+      WHERE os.DashboardKey = @dashboardKey
+        AND os.DashboardKeyActive = 1
+        AND (
+              os.DashboardKeyExpiresAt IS NULL
+              OR os.DashboardKeyExpiresAt > SYSUTCDATETIME()
+            )
+      ORDER BY f.Facility;
+    `);
+
+  return result.recordset.map((row) => ({
+    key: String(row.FacilityKey),
+    name: String(row.Facility)
+  }));
+}

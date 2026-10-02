@@ -7,13 +7,14 @@ import {
   SWOT_META,
   SWOT_TAGS,
   INTENSITY_META,
-  QUESTIONS,
-  getHospitalRecords,
-  aggregateByTag,
+  calcStats,
   type SWOTTag,
-  type SurveyRecord,
   type QuestionStat,
 } from "../data";
+import {
+  getOrganizationDashboard,
+  type DashboardSummary
+} from "../api";
 import { clsx } from "clsx";
 import { Building2, Users, Copy, Check, Home, TrendingUp, TrendingDown, FileDown } from "lucide-react";
 
@@ -151,7 +152,7 @@ function SWOTBarChart({ data }: { data: BarPoint[] }) {
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: meta.hexColor }} />
               <span className={clsx("font-semibold", meta.color)}>{meta.label}</span>
               <span className="ml-auto font-mono font-bold text-foreground">
-                {tooltip.point.hasData ? Math.round(tooltip.point.avg) : "—"}
+                {tooltip.point.hasData ? Math.round(tooltip.point.avg) : "\u2014"}
               </span>
             </div>
           </div>
@@ -162,8 +163,12 @@ function SWOTBarChart({ data }: { data: BarPoint[] }) {
 }
 
 export default function DashboardPage() {
-  const { hospitalSlug } = useParams<{ hospitalSlug: string }>();
-  const [records, setRecords] = useState<SurveyRecord[]>([]);
+  const { dashboardKey } = useParams<{ dashboardKey: string }>();
+
+  const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
+  const [organizationName, setOrganizationName] = useState<string>();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTag, setActiveTag] = useState<SWOTTag>("strengths");
   const [exporting, setExporting] = useState(false);
@@ -210,7 +215,7 @@ export default function DashboardPage() {
         remaining -= pageH;
         if (remaining > 0) { pdf.addPage(); yPos += pageH; }
       }
-      pdf.save(`${hospitalSlug ?? "dashboard"}-swot-report.pdf`);
+      pdf.save(`${dashboardKey ?? "dashboard"}-swot-report.pdf`);
     } finally {
       setPdfMode(false);
       setExporting(false);
@@ -218,35 +223,134 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    if (!hospitalSlug) return;
+    if (!dashboardKey) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
 
-    const load = () => setRecords(getHospitalRecords(hospitalSlug));
-    load();
+    let cancelled = false;
 
-    // Re-read storage when another tab writes new survey data
-    window.addEventListener("storage", load);
-    // Re-read when the user returns to this tab after completing a survey
-    document.addEventListener("visibilitychange", load);
+    async function loadDashboardData() {
+      setLoading(true);
+      setLoadError(false);
+
+      try {
+        const dashboardResponse = await getOrganizationDashboard(
+          dashboardKey
+        );
+
+        if (cancelled) return;
+
+        setDashboard(dashboardResponse.dashboard);
+        setOrganizationName(dashboardResponse.organizationName);
+      } catch (error) {
+        console.error("Unable to load dashboard", error);
+
+        if (!cancelled) {
+          setDashboard(null);
+          setLoadError(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadDashboardData();
 
     return () => {
-      window.removeEventListener("storage", load);
-      document.removeEventListener("visibilitychange", load);
+      cancelled = true;
     };
-  }, [hospitalSlug]);
+  }, [dashboardKey]);
 
-  const hospitalName = records[0]?.participant.hospital ?? hospitalSlug ?? "Hospital";
-  const organizationName = records[0]?.participant.organization;
+  function categoryToTag(category: string): SWOTTag {
+    switch (category) {
+      case "Strength":
+        return "strengths";
+      case "Weakness":
+        return "weaknesses";
+      case "Opportunity":
+        return "opportunities";
+      case "Threat":
+        return "threats";
+      default:
+        return "weaknesses";
+    }
+  }
 
-  const { questionStats, tagSummaries } = aggregateByTag(records);
+  function dashboardIntensity(
+    avg: number,
+    tag: SWOTTag
+  ): QuestionStat["intensity"] {
+    const positive = tag === "strengths" || tag === "opportunities";
 
-  // Overall average
-  const allScores = questionStats.flatMap((qs) => qs.scores);
-  const overallAvg = allScores.length ? allScores.reduce((s, v) => s + v, 0) / allScores.length : 0;
-  const answeredCount = questionStats.filter((qs) => qs.scores.length > 0).length;
+    if (positive) {
+      if (avg >= 5.5) return "critical-positive";
+      if (avg >= 4.5) return "clear-positive";
+      return "mild-positive";
+    }
+
+    if (avg > 2.5) return "mild-negative";
+    if (avg >= 1.5) return "clear-negative";
+    return "critical-negative";
+  }
+
+  const questionStats: QuestionStat[] = (dashboard?.questions ?? []).map((q) => {
+    const scores = Object.entries(q.distribution ?? {}).flatMap(
+      ([value, count]) =>
+        Array.from({ length: Number(count) }, () => Number(value))
+    );
+
+    const primaryTag = categoryToTag(q.swotCategory);
+    const classification =
+      q.domain.toLowerCase() === "external" ? "external" : "internal";
+
+    return {
+      question: {
+        id: `S${String(q.statementId).padStart(3, "0")}`,
+        text: q.statement,
+        classification,
+        theme: q.theme,
+        scoreDirection: "positive",
+      },
+      scores,
+      avg: q.averageScore,
+      stats: {
+        avg: q.averageScore,
+        median: q.medianScore,
+        min: q.minScore,
+        max: q.maxScore,
+        count: q.responseCount,
+      },
+      tags: [primaryTag],
+      primaryTag,
+      intensity: dashboardIntensity(q.averageScore, primaryTag),
+    };
+  });
+
+  const tagSummaries = SWOT_TAGS.map((tag) => {
+    const questions = questionStats.filter(
+      (question) => question.primaryTag === tag
+    );
+
+    return {
+      tag,
+      questions,
+      stats: calcStats(questions.flatMap((question) => question.scores)),
+    };
+  });
+
+  const records = dashboard?.respondentDetails ?? [];
+  const hospitalName = records[0]?.facility ?? "Hospital";
+
+  const overallAvg = dashboard?.overallScore ?? 0;
+  const answeredCount = dashboard?.questionsAnalyzed ?? 0;
 
   // SWOT Index: S=+2, O=+1, W=-1, T=-2
   const SWOT_WEIGHTS: Record<SWOTTag, number> = { strengths: 2, opportunities: 1, weaknesses: -1, threats: -2 };
-  const swotIndex = tagSummaries.reduce((sum, { tag, questions: tQs }) => sum + tQs.length * SWOT_WEIGHTS[tag], 0);
+  const swotIndex = dashboard?.swotIndex ?? 0;
 
   // Overall classification from swot index
   const strengthCount = tagSummaries.find(t => t.tag === "strengths")!.questions.length;
@@ -260,7 +364,7 @@ export default function DashboardPage() {
       : (weaknessCount >= threatCount ? "weaknesses" : "threats"))
     : null;
 
-  // Distribution chart order: T → W → O → S
+  // Distribution chart order: T -> W -> O -> S
   const DIST_ORDER: SWOTTag[] = ["threats", "weaknesses", "opportunities", "strengths"];
   const distributionData = DIST_ORDER.map((tag) => {
     const summary = tagSummaries.find((t) => t.tag === tag)!;
@@ -284,8 +388,8 @@ export default function DashboardPage() {
   const towsOpportunities = questionStats.filter(qs => qs.primaryTag === "opportunities" && qs.scores.length > 0);
   const towsThreats = questionStats.filter(qs => qs.primaryTag === "threats" && qs.scores.length > 0);
 
-  // Domain matrix — dynamic, grouped by theme tag from question data
-  const themes = [...new Set(QUESTIONS.map(q => q.theme))];
+  // Domain matrix - dynamic, grouped by theme tag from question data
+  const themes = [...new Set(questionStats.map(q => q.question.theme))];
   const domainRows = themes.map((theme) => {
     const qs = questionStats.filter(q => q.question.theme === theme);
     const scores = qs.flatMap((q) => q.scores);
@@ -323,8 +427,8 @@ export default function DashboardPage() {
             {tag[0].toUpperCase()}
           </div>
           <div>
-            <h4 className="font-semibold text-foreground text-sm">{meta.label} — Tagged Questions</h4>
-            <p className="text-xs text-muted-foreground">{tagSummary?.questions.length ?? 0} questions · {records.length} respondents</p>
+            <h4 className="font-semibold text-foreground text-sm">{meta.label} {"\u2014"} Tagged Questions</h4>
+            <p className="text-xs text-muted-foreground">{tagSummary?.questions.length ?? 0} questions {"\u00B7"} {records.length} respondents</p>
           </div>
         </div>
         {(tagSummary?.questions.length ?? 0) === 0 ? (
@@ -366,12 +470,12 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span className="font-bold text-base" style={{ color: meta.hexColor, fontFamily: "'DM Mono', monospace" }}>
-                          {qs.stats.count > 0 ? Math.round(avg) : "—"}
+                          {qs.stats.count > 0 ? Math.round(avg) : "\u2014"}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-center font-mono text-sm text-foreground">{qs.stats.count > 0 ? Math.round(qs.stats.median) : "—"}</td>
-                      <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">{qs.stats.count > 0 ? qs.stats.min : "—"}</td>
-                      <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">{qs.stats.count > 0 ? qs.stats.max : "—"}</td>
+                      <td className="px-4 py-4 text-center font-mono text-sm text-foreground">{qs.stats.count > 0 ? Math.round(qs.stats.median) : "\u2014"}</td>
+                      <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">{qs.stats.count > 0 ? qs.stats.min : "\u2014"}</td>
+                      <td className="px-4 py-4 text-center font-mono text-sm text-muted-foreground">{qs.stats.count > 0 ? qs.stats.max : "\u2014"}</td>
                       <td className="px-4 py-4">
                         {qs.stats.count > 0 ? (
                           <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
@@ -392,7 +496,9 @@ export default function DashboardPage() {
     );
   }
 
-  const dashboardUrl = `${window.location.origin}/results/${hospitalSlug}`;
+  const dashboardUrl = dashboardKey
+    ? `${window.location.origin}/results/${dashboardKey}`
+    : window.location.href;
 
   function copyLink() {
     navigator.clipboard.writeText(dashboardUrl);
@@ -426,7 +532,7 @@ export default function DashboardPage() {
             No Results Yet
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
-            No completed survey responses found for <strong>{hospitalSlug?.replace(/-/g, " ")}</strong>. Share the survey link to collect responses.
+            No completed survey responses found for <strong>{hospitalName}</strong>. Share the survey link to collect responses.
           </p>
           <Link
             to="/"
@@ -439,7 +545,8 @@ export default function DashboardPage() {
     </div>
   );
 
-  if (records.length === 0) return <EmptyState />;
+  if (loading) return null;
+  if (loadError || !dashboard || records.length === 0) return <EmptyState />;
 
   return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -488,7 +595,7 @@ export default function DashboardPage() {
                 style={{ backgroundColor: "#3292BE" }}
               >
                 <FileDown className="w-3.5 h-3.5" />
-                {exporting ? "Exporting…" : "Export PDF"}
+                {exporting ? "Exporting\u2026" : "Export PDF"}
               </button>
             </div>
           </div>
@@ -497,14 +604,14 @@ export default function DashboardPage() {
 
       <main ref={printRef} className="max-w-6xl mx-auto px-6 py-10 space-y-10">
 
-        {/* ── Section 1: Hero KPI Cards ── */}
+        {/* Section 1: Hero KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Overall Score */}
           <div className="bg-white rounded-2xl border border-border p-6">
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-2">Overall Score</p>
             <div className="flex items-end gap-2 mb-2">
               <p className="leading-none text-foreground" style={{ fontFamily: "'DM Mono', monospace", fontSize: "3rem", fontWeight: 700 }}>
-                {overallAvg > 0 ? Math.round(overallAvg) : "—"}
+                {overallAvg > 0 ? Math.round(overallAvg) : "\u2014"}
               </p>
               <p className="text-muted-foreground mb-1">/ 6.0</p>
             </div>
@@ -527,7 +634,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-1 text-[10px] text-muted-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>
               {tagSummaries.map(({ tag, questions: tQs }) => (
                 <span key={tag}>
-                  {tQs.length} {SWOT_META[tag].label} × {SWOT_WEIGHTS[tag] > 0 ? "+" : ""}{SWOT_WEIGHTS[tag]} = {tQs.length > 0 ? (tQs.length * SWOT_WEIGHTS[tag] > 0 ? "+" : "") + (tQs.length * SWOT_WEIGHTS[tag]) : "0"}
+                  {tQs.length} {SWOT_META[tag].label} {"\u00D7"} {SWOT_WEIGHTS[tag] > 0 ? "+" : ""}{SWOT_WEIGHTS[tag]} = {tQs.length > 0 ? (tQs.length * SWOT_WEIGHTS[tag] > 0 ? "+" : "") + (tQs.length * SWOT_WEIGHTS[tag]) : "0"}
                 </span>
               ))}
             </div>
@@ -540,7 +647,7 @@ export default function DashboardPage() {
               <p className="leading-none" style={{ fontFamily: "'DM Mono', monospace", fontSize: "2.5rem", fontWeight: 700, color: "var(--foreground)" }}>
                 {answeredCount}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">of {QUESTIONS.length} total</p>
+              <p className="text-xs text-muted-foreground mt-1">of {questionStats.length} total</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-1">Respondents</p>
@@ -552,7 +659,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Section 2: SWOT Category KPI Cards ── */}
+        {/* Section 2: SWOT Category KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {tagSummaries.map(({ tag, stats, questions: tagQs }) => {
             const meta = SWOT_META[tag];
@@ -579,7 +686,7 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* ── Section 3: SWOT Distribution Chart ── */}
+        {/* Section 3: SWOT Distribution Chart */}
         <div className="bg-white rounded-2xl border border-border p-6">
           <h3 className="text-base font-semibold text-foreground mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
             SWOT Distribution
@@ -608,11 +715,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Section 4: Top Findings ── */}
+        {/* Section 4: Top Findings */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {[
             { label: "Top Strengths", items: topStrengths, tag: "strengths" as SWOTTag, desc: "Highest-scoring questions" },
-            { label: "Top Threats", items: topThreats, tag: "threats" as SWOTTag, desc: "Lowest-scoring questions — highest risk" },
+            { label: "Top Threats", items: topThreats, tag: "threats" as SWOTTag, desc: "Lowest-scoring questions \u2014 highest risk" },
           ].map(({ label, items, tag, desc }) => {
             const meta = SWOT_META[tag];
             return (
@@ -629,7 +736,7 @@ export default function DashboardPage() {
                           {i + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10px] text-muted-foreground font-mono">{qs.question.id} · {qs.question.theme}</p>
+                          <p className="text-[10px] text-muted-foreground font-mono">{qs.question.id} {"\u00B7"} {qs.question.theme}</p>
                           <p className="text-xs text-foreground leading-snug line-clamp-2">{qs.question.text}</p>
                           <span
                             className="inline-block text-[9px] font-semibold uppercase tracking-wide px-1 py-0.5 rounded text-white mt-1"
@@ -650,21 +757,21 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* ── Section 5: TOWS Matrix ── */}
+        {/* Section 5: TOWS Matrix */}
         <div>
           <h3 className="text-base font-semibold text-foreground mb-1" style={{ fontFamily: "'Playfair Display', serif" }}>
             TOWS Strategic Matrix
           </h3>
           <p className="text-xs text-muted-foreground mb-5">
             The TOWS method combines your SWOT results into four strategic directions.
-            Internal factors (Strengths/Weaknesses) × External factors (Opportunities/Threats).
+            Internal factors (Strengths/Weaknesses) {"\u00D7"} External factors (Opportunities/Threats).
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* SO */}
             <div className="bg-white rounded-2xl border-2 border-emerald-200 p-5">
               <div className="flex items-center gap-2 mb-1">
                 <span className="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">SO</span>
-                <p className="text-sm font-semibold text-emerald-700">Leverage Strengths × Opportunities</p>
+                <p className="text-sm font-semibold text-emerald-700">Leverage Strengths {"\u00D7"} Opportunities</p>
               </div>
               <p className="text-[10px] text-muted-foreground mb-3">Use your strongest internal capabilities to capture favorable external conditions.</p>
               <div className="flex gap-4 text-xs mb-3">
@@ -673,7 +780,7 @@ export default function DashboardPage() {
               </div>
               {towsStrengths.slice(0, 3).map(qs => (
                 <div key={qs.question.id} className="flex items-start gap-2 mb-1.5">
-                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} · {qs.question.theme}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} {"\u00B7"} {qs.question.theme}</span>
                   <p className="text-[11px] text-foreground leading-snug line-clamp-1">{qs.question.text}</p>
                   <span className="text-[11px] font-bold text-emerald-600 shrink-0 ml-auto" style={{ fontFamily: "'DM Mono', monospace" }}>{Math.round(qs.stats.avg)}</span>
                 </div>
@@ -693,7 +800,7 @@ export default function DashboardPage() {
               </div>
               {towsThreats.slice(0, 3).map(qs => (
                 <div key={qs.question.id} className="flex items-start gap-2 mb-1.5">
-                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} · {qs.question.theme}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} {"\u00B7"} {qs.question.theme}</span>
                   <p className="text-[11px] text-foreground leading-snug line-clamp-1">{qs.question.text}</p>
                   <span className="text-[11px] font-bold text-orange-600 shrink-0 ml-auto" style={{ fontFamily: "'DM Mono', monospace" }}>{Math.round(qs.stats.avg)}</span>
                 </div>
@@ -713,7 +820,7 @@ export default function DashboardPage() {
               </div>
               {towsWeaknesses.slice(0, 3).map(qs => (
                 <div key={qs.question.id} className="flex items-start gap-2 mb-1.5">
-                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} · {qs.question.theme}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} {"\u00B7"} {qs.question.theme}</span>
                   <p className="text-[11px] text-foreground leading-snug line-clamp-1">{qs.question.text}</p>
                   <span className="text-[11px] font-bold text-rose-600 shrink-0 ml-auto" style={{ fontFamily: "'DM Mono', monospace" }}>{Math.round(qs.stats.avg)}</span>
                 </div>
@@ -726,14 +833,14 @@ export default function DashboardPage() {
                 <span className="w-7 h-7 rounded-full bg-rose-600 text-white text-xs font-bold flex items-center justify-center shrink-0">WT</span>
                 <p className="text-sm font-semibold text-rose-700">Minimize Weaknesses & Avoid Threats</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mb-3">Critical risk areas — internal weaknesses exposed to external threats require immediate attention.</p>
+              <p className="text-[10px] text-muted-foreground mb-3">Critical risk areas {"\u2014"} internal weaknesses exposed to external threats require immediate attention.</p>
               <div className="flex gap-4 text-xs mb-3">
                 <span className="text-rose-700 font-semibold">{towsWeaknesses.length} Weaknesses</span>
                 <span className="text-orange-700 font-semibold">{towsThreats.length} Threats</span>
               </div>
               {[...towsWeaknesses, ...towsThreats].sort((a, b) => a.stats.avg - b.stats.avg).slice(0, 3).map(qs => (
                 <div key={qs.question.id} className="flex items-start gap-2 mb-1.5">
-                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} · {qs.question.theme}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground shrink-0 mt-0.5">{qs.question.id} {"\u00B7"} {qs.question.theme}</span>
                   <p className="text-[11px] text-foreground leading-snug line-clamp-1">{qs.question.text}</p>
                   <span className="text-[11px] font-bold text-rose-600 shrink-0 ml-auto" style={{ fontFamily: "'DM Mono', monospace" }}>{Math.round(qs.stats.avg)}</span>
                 </div>
@@ -744,14 +851,14 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* ── Section 6: Domain SWOT Matrix with response distribution ── */}
+        {/* Section 6: Domain SWOT Matrix with response distribution */}
         <div className="bg-white rounded-2xl border border-border overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
             <h3 className="font-semibold text-foreground text-sm" style={{ fontFamily: "'Playfair Display', serif" }}>
               Domain SWOT Matrix
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Ranked strongest → weakest. Response distribution shown to surface hidden risks masked by averages.
+              Ranked strongest {"\u2192"} weakest. Response distribution shown to surface hidden risks masked by averages.
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -762,7 +869,7 @@ export default function DashboardPage() {
                   <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Domain</th>
                   <th className="text-center px-4 py-3 text-xs text-muted-foreground font-medium w-20">Avg</th>
                   <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium w-40">SWOT Breakdown</th>
-                  <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium w-48">Response Distribution (1–6)</th>
+                  <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium w-48">Response Distribution (1{"\u2013"}6)</th>
                 </tr>
               </thead>
               <tbody>
@@ -774,7 +881,7 @@ export default function DashboardPage() {
                       <td className="px-4 py-4 text-sm font-medium text-foreground">{row.name}</td>
                       <td className="px-4 py-4 text-center">
                         <span className="font-bold" style={{ color: row.avg !== null ? (row.avg >= 3.5 ? "#16a34a" : "#dc2626") : "#94a3b8", fontFamily: "'DM Mono', monospace" }}>
-                          {row.avg !== null ? Math.round(row.avg) : "—"}
+                          {row.avg !== null ? Math.round(row.avg) : "\u2014"}
                         </span>
                       </td>
                       <td className="px-4 py-4">
@@ -827,10 +934,10 @@ export default function DashboardPage() {
             className="text-base font-semibold text-foreground mb-1"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            All Questions — Average Score by SWOT Tag
+            All Questions {"\u2014"} Average Score by SWOT Tag
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Each bar represents one question (Q01–Q50), colored by its primary SWOT tag based on average score. Hover for details.
+            Each bar represents one question (Q01{"\u2013"}Q73), colored by its primary SWOT tag based on average score. Hover for details.
           </p>
           {/* Legend */}
           <div className="flex flex-wrap gap-4 mb-4">
@@ -852,7 +959,7 @@ export default function DashboardPage() {
             </h3>
           </div>
 
-          {/* Tab selector — hidden during PDF export */}
+          {/* Tab selector - hidden during PDF export */}
           {!pdfMode && (
             <div className="flex gap-2 mb-5 flex-wrap">
               {SWOT_TAGS.map((tag) => {
@@ -921,20 +1028,19 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {records.map((r) => {
-                  const answered = QUESTIONS.filter((q) => r.answers[q.id] !== undefined).length;
                   return (
-                    <tr key={r.participant.token} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                    <tr key={r.anonymousId} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                       <td className="px-6 py-3 font-mono text-xs font-semibold text-foreground">
-                        {r.participant.anonymousId}
+                        {r.anonymousId}
                       </td>
-                      <td className="px-4 py-3 text-sm text-foreground">{r.participant.department}</td>
+                      <td className="px-4 py-3 text-sm text-foreground">{r.department ?? "-"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {r.participant.submittedAt
-                          ? new Date(r.participant.submittedAt).toLocaleDateString()
-                          : "—"}
+                        {r.submittedAt
+                          ? new Date(r.submittedAt).toLocaleDateString()
+                          : "\u2014"}
                       </td>
                       <td className="px-3 py-3 text-center text-xs font-mono text-foreground">
-                        {answered} / {QUESTIONS.length}
+                        {r.answeredCount} / {questionStats.length}
                       </td>
                     </tr>
                   );

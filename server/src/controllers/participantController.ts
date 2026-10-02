@@ -6,7 +6,7 @@ const surveyKeySchema = z.string().uuid();
 
 const participantSchema = z.object({
   participant: z.string().trim().min(1).max(100),
-  facilityId: z.number().int().positive(),
+  facilityName: z.string().trim().min(1).max(200),
   role: z.string().trim().max(50).optional().nullable(),
   email: z
     .union([
@@ -62,7 +62,7 @@ export async function createParticipantForSurvey(
     const participant = await registerParticipant({
       surveyKey: parsedSurveyKey.data,
       participant: parsedBody.data.participant,
-      facilityId: parsedBody.data.facilityId,
+      facilityName: parsedBody.data.facilityName,
       role: normalizeOptional(parsedBody.data.role),
       email: normalizeOptional(parsedBody.data.email),
       department: normalizeOptional(parsedBody.data.department),
@@ -72,7 +72,7 @@ export async function createParticipantForSurvey(
     if (!participant) {
       res.status(404).json({
         status: "error",
-        message: "Survey or facility not found"
+        message: "Survey not found"
       });
       return;
     }

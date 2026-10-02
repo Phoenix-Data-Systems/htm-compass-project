@@ -5,18 +5,22 @@ import {
 
 export interface ParticipantResponse {
   id: number;
+  facilityId: number;
+  facilityName: string;
 }
 
 export async function registerParticipant(
   input: CreateParticipantInput
 ): Promise<ParticipantResponse | null> {
-  const participantId = await createParticipant(input);
+  const result = await createParticipant(input);
 
-  if (participantId === null) {
+  if (!result) {
     return null;
   }
 
   return {
-    id: participantId
+    id: result.participantId,
+    facilityId: result.facilityId,
+    facilityName: result.facilityName
   };
 }

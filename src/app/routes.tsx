@@ -7,8 +7,8 @@ import DashboardPage from "./pages/DashboardPage";
 
 export const router = createBrowserRouter([
   { path: "/", Component: HomePage },
-  { path: "/assess/:orgId", Component: LandingPage },
+  { path: "/assess/:surveyKey", Component: LandingPage },
   { path: "/survey/:token", Component: SurveyPage },
   { path: "/survey/:token/complete", Component: ThankYouPage },
-  { path: "/results/:hospitalSlug", Component: DashboardPage },
+  { path: "/results/:dashboardKey", Component: DashboardPage },
 ]);

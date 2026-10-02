@@ -3,11 +3,16 @@ import { useParams, useNavigate } from "react-router";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
 import {
-  QUESTIONS,
   getRecord,
   saveRecord,
   type SurveyRecord,
 } from "../data";
+import {
+  getParticipantResponses,
+  getSurvey,
+  saveSurveyResponses,
+  type SurveyQuestion
+} from "../api";
 import { clsx } from "clsx";
 import { ChevronRight, Check, Zap } from "lucide-react";
 
@@ -50,6 +55,7 @@ export default function SurveyPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [record, setRecord] = useState<SurveyRecord | null>(null);
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [unanswered, setUnanswered] = useState<string[]>([]);
@@ -57,19 +63,105 @@ export default function SurveyPage() {
   const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!token) { navigate("/"); return; }
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
     const r = getRecord(token);
-    if (!r) { navigate("/"); return; }
-    if (r.completed) { navigate(`/survey/${token}/complete`); return; }
-    setRecord(r);
-    setAnswers(r.answers);
+
+    if (!r) {
+      navigate("/");
+      return;
+    }
+
+    if (r.completed) {
+      navigate(`/survey/${token}/complete`);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSurvey() {
+      try {
+        const [survey, savedResponses] = await Promise.all([
+          getSurvey(r.surveyKey),
+          getParticipantResponses(r.surveyKey, r.participantId)
+        ]);
+
+        if (cancelled) return;
+
+        const orderedQuestions = [...survey.questions].sort(
+          (a, b) => a.sequence - b.sequence
+        );
+
+        const restoredAnswers: Record<string, number> = {
+          ...r.answers
+        };
+
+        for (const response of savedResponses) {
+          restoredAnswers[String(response.statementId)] = response.value;
+        }
+
+        const totalPages = Math.ceil(
+          orderedQuestions.length / SURVEY_PER_PAGE
+        );
+
+        let resumePage = 0;
+
+        for (let page = 0; page < totalPages; page++) {
+          const start = page * SURVEY_PER_PAGE;
+          const pageQuestions = orderedQuestions.slice(
+            start,
+            start + SURVEY_PER_PAGE
+          );
+
+          const pageComplete = pageQuestions.every(
+            (question) =>
+              restoredAnswers[String(question.id)] !== undefined
+          );
+
+          if (!pageComplete) {
+            resumePage = page;
+            break;
+          }
+
+          resumePage = Math.min(page + 1, totalPages - 1);
+        }
+
+        const syncedRecord = {
+          ...r,
+          answers: restoredAnswers
+        };
+
+        saveRecord(syncedRecord);
+        setQuestions(orderedQuestions);
+        setRecord(syncedRecord);
+        setAnswers(restoredAnswers);
+        setPageIndex(resumePage);
+      } catch (error) {
+        console.error("Unable to load survey:", error);
+
+        if (!cancelled) {
+          navigate("/");
+        }
+      }
+    }
+
+    loadSurvey();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token, navigate]);
 
   if (!record) return null;
 
   // Build ordered Question objects from the record's random selection
-  const qMap = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
-  const surveyQuestions = (record.questionIds ?? []).map((id) => qMap[id]).filter(Boolean);
+  const surveyQuestions = questions.map((question) => ({
+    id: String(question.id),
+    text: question.statement
+  }));
   const surveyTotal = surveyQuestions.length;
   const surveyTotalPages = Math.ceil(surveyTotal / SURVEY_PER_PAGE);
 
@@ -88,19 +180,50 @@ export default function SurveyPage() {
     if (record) setRecord({ ...record, answers: updated });
   }
 
-  function handleContinue() {
-    const missing = pageQuestions.filter((q) => answers[q.id] === undefined).map((q) => q.id);
+  async function handleContinue() {
+    const missing = pageQuestions
+      .filter((q) => answers[q.id] === undefined)
+      .map((q) => q.id);
+
     if (missing.length) {
       setUnanswered(missing);
       topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
+
+    if (!record || !token) return;
+
     setUnanswered([]);
+
     if (isLastPage) {
-      handleSubmit();
-    } else {
+      await handleSubmit();
+      return;
+    }
+
+    try {
+      const pageResponses = pageQuestions.map((q) => ({
+        statementId: Number(q.id),
+        value: answers[q.id]
+      }));
+
+      await saveSurveyResponses(
+        record.surveyKey,
+        record.participantId,
+        pageResponses
+      );
+
+      const updatedRecord = {
+        ...record,
+        answers
+      };
+
+      saveRecord(updatedRecord);
+      setRecord(updatedRecord);
+
       setPageIndex((i) => i + 1);
       topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      console.error("Unable to save survey responses:", error);
     }
   }
 
@@ -119,16 +242,38 @@ export default function SurveyPage() {
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!record || !token) return;
+
     setSubmitting(true);
-    saveRecord({
-      ...record,
-      answers,
-      completed: true,
-      participant: { ...record.participant, submittedAt: new Date().toISOString() },
-    });
-    navigate(`/survey/${token}/complete`);
+
+    try {
+      const allResponses = surveyQuestions.map((q) => ({
+        statementId: Number(q.id),
+        value: answers[q.id]
+      }));
+
+      await saveSurveyResponses(
+        record.surveyKey,
+        record.participantId,
+        allResponses
+      );
+
+      saveRecord({
+        ...record,
+        answers,
+        completed: true,
+        participant: {
+          ...record.participant,
+          submittedAt: new Date().toISOString()
+        }
+      });
+
+      navigate(`/survey/${token}/complete`);
+    } catch (error) {
+      console.error("Unable to submit survey:", error);
+      setSubmitting(false);
+    }
   }
 
   return (

@@ -23,7 +23,7 @@ export interface DashboardQuestion {
 
 export async function getDashboardQuestions(
   surveyKey: string,
-  facilityId: number
+  facilityId: number | null = null
 ): Promise<DashboardQuestion[]> {
   const pool = await getDatabasePool();
 
@@ -75,7 +75,7 @@ export async function getDashboardQuestions(
           INNER JOIN dbo.Participants p
               ON p.ID = r.ParticipantID
              AND p.Active = 1
-             AND p.FacilityID = @facilityId
+             AND (@facilityId IS NULL OR p.FacilityID = @facilityId)
           INNER JOIN dbo.OrgFacilities f
               ON f.ID = p.FacilityID
              AND f.OrgID = sqc.OrgID

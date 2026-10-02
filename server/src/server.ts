@@ -5,6 +5,8 @@ import helmet from "helmet";
 import { getDatabasePool } from "./config/database.js";
 import { environment } from "./config/environment.js";
 import { surveyRouter } from "./routes/surveyRoutes.js";
+import { registrationRouter } from "./routes/registrationRoutes.js";
+import { dashboardRouter } from "./routes/dashboardRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -37,6 +39,8 @@ app.use(
 app.use(express.json({ limit: "100kb" }));
 
 app.use("/api/surveys", surveyRouter);
+app.use("/api/registrations", registrationRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
@@ -83,4 +87,3 @@ app.use(errorHandler);
 app.listen(environment.port, () => {
   console.log(`SWOT API running on port ${environment.port}`);
 });
-
