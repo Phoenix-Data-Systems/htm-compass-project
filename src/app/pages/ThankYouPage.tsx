@@ -1,33 +1,23 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { getRecord, type SurveyRecord } from "../data";
-import { CheckCircle2, BarChart3, Home, Copy, Check } from "lucide-react";
-import { clsx } from "clsx";
+import { CheckCircle2, Home } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
 
 export default function ThankYouPage() {
   const { token } = useParams<{ token: string }>();
   const [record, setRecord] = useState<SurveyRecord | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (token) setRecord(getRecord(token));
   }, [token]);
 
-  const dashboardUrl = record
-    ? `${window.location.origin}/results/${record.participant.hospitalSlug}`
-    : null;
-
-  function copyLink() {
-    if (!dashboardUrl) return;
-    navigator.clipboard.writeText(dashboardUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
   return (
-    <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div
+      className="min-h-screen bg-background flex flex-col"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
       <header className="bg-background border-b border-border">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-4">
           <ImageWithFallback
@@ -37,7 +27,9 @@ export default function ThankYouPage() {
           />
           <div className="border-l border-border pl-4">
             <p className="text-sm font-medium text-foreground">SWOT Analysis</p>
-            <p className="text-xs text-foreground/70">Organizational Health Check-up</p>
+            <p className="text-xs text-foreground/70">
+              Organizational Health Check-up
+            </p>
           </div>
         </div>
       </header>
@@ -55,6 +47,7 @@ export default function ThankYouPage() {
             >
               Survey Complete
             </h1>
+
             <p className="text-muted-foreground leading-relaxed mb-2">
               Thank you for completing the SWOT Analysis. Your responses have been recorded anonymously.
             </p>
@@ -63,18 +56,28 @@ export default function ThankYouPage() {
               <div className="mt-6 rounded-xl bg-muted p-4 text-left text-sm space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Hospital</span>
-                  <span className="font-medium text-foreground">{record.participant.hospital}</span>
+                  <span className="font-medium text-foreground">
+                    {record.participant.hospital}
+                  </span>
                 </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Department</span>
-                  <span className="font-medium text-foreground">{record.participant.department}</span>
+                  <span className="font-medium text-foreground">
+                    {record.participant.department}
+                  </span>
                 </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Anonymous ID</span>
-                  <span className="font-semibold text-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>
+                  <span
+                    className="font-semibold text-foreground"
+                    style={{ fontFamily: "'DM Mono', monospace" }}
+                  >
                     {record.participant.anonymousId}
                   </span>
                 </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Submitted</span>
                   <span className="font-medium text-foreground">
@@ -86,44 +89,10 @@ export default function ThankYouPage() {
               </div>
             )}
 
-            {dashboardUrl && (
-              <div className="mt-6">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-2">
-                  Hospital Results Dashboard
-                </p>
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-muted p-3">
-                  <code className="flex-1 text-xs text-foreground truncate" style={{ fontFamily: "'DM Mono', monospace" }}>
-                    {dashboardUrl}
-                  </code>
-                  <button
-                    onClick={copyLink}
-                    className={clsx(
-                      "shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
-                      copied
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-white border border-border text-foreground hover:bg-secondary"
-                    )}
-                  >
-                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copied ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              {dashboardUrl && (
-                <Link
-                  to={dashboardUrl}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-3.5 text-sm font-semibold hover:bg-primary/90 transition-all"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  View Dashboard
-                </Link>
-              )}
+            <div className="mt-8">
               <Link
                 to="/"
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-white text-foreground py-3.5 text-sm font-semibold hover:bg-muted transition-all"
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-white text-foreground py-3.5 text-sm font-semibold hover:bg-muted transition-all"
               >
                 <Home className="w-4 h-4" />
                 Back to Home

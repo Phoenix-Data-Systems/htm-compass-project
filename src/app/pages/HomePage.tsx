@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import htmcLogo from "@/imports/HTMC_Logo_-_blue.png";
 import compassBg from "@/imports/compass_bg.png";
-import { saveOrg, generateOrgId, type OrgRecord } from "../data";
+import { registerOrganization } from "../api";
 import { clsx } from "clsx";
 import {
   Search,
@@ -83,8 +83,15 @@ export default function HomePage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ orgId: string; url: string } | null>(null);
+  const [result, setResult] = useState<{
+    orgId: string;
+    surveyKey: string;
+    dashboardKey: string;
+    url: string;
+    dashboardUrl: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [dashboardCopied, setDashboardCopied] = useState(false);
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const formSectionRef = useRef<HTMLElement>(null);
@@ -112,25 +119,46 @@ export default function HomePage() {
     return e;
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+
     setSubmitting(true);
-    const orgId = generateOrgId();
-    const org: OrgRecord = {
-      orgId,
-      organization: form.organization.trim(),
-      contactName: form.contactName.trim(),
-      contactPhone: form.contactPhone.trim(),
-      contactEmail: form.contactEmail.trim(),
-      contactJobTitle: form.contactJobTitle.trim(),
-      facilities: Number(form.facilities),
-      createdAt: new Date().toISOString(),
-    };
-    saveOrg(org);
-    const url = `${window.location.origin}/assess/${orgId}`;
-    setResult({ orgId, url });
-    setSubmitting(false);
+
+    try {
+      const registration = await registerOrganization({
+        organization: form.organization.trim(),
+        contactName: form.contactName.trim(),
+        contactPhone: form.contactPhone.trim(),
+        contactEmail: form.contactEmail.trim(),
+        contactJobTitle: form.contactJobTitle.trim(),
+        numberOfFacilities: Number(form.facilities)
+      });
+
+      const url = `${window.location.origin}/assess/${registration.surveyKey}`;
+      const dashboardUrl = `${window.location.origin}/results/${registration.dashboardKey}`;
+
+      setResult({
+        orgId: String(registration.organizationId),
+        surveyKey: registration.surveyKey,
+        dashboardKey: registration.dashboardKey,
+        url,
+        dashboardUrl
+      });
+    } catch (error) {
+      console.error("Organization registration failed:", error);
+
+      setErrors((current) => ({
+        ...current,
+        organization: "Unable to register organization. Please try again."
+      }));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function copyUrl() {
@@ -138,6 +166,13 @@ export default function HomePage() {
     navigator.clipboard.writeText(result.url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function copyDashboardUrl() {
+    if (!result) return;
+    navigator.clipboard.writeText(result.dashboardUrl);
+    setDashboardCopied(true);
+    setTimeout(() => setDashboardCopied(false), 2000);
   }
 
   const HOW_STEPS = [
@@ -390,21 +425,49 @@ export default function HomePage() {
                   Share the link below with your team to begin the assessment. Your organization ID is{" "}
                   <span className="font-mono font-semibold text-foreground">{result.orgId}</span>.
                 </p>
+                <p className="text-xs font-semibold text-foreground text-left mb-2">
+                  Assessment Link
+                </p>
                 <div className="flex items-center gap-2 bg-muted rounded-xl px-4 py-3 mb-4">
-                  <p className="flex-1 text-sm text-foreground font-mono truncate text-left">{result.url}</p>
+                  <p className="flex-1 text-sm text-foreground font-mono truncate text-left">
+                    {result.url}
+                  </p>
                   <button
                     onClick={copyUrl}
                     className={clsx(
                       "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shrink-0 transition-all",
-                      copied ? "bg-emerald-600 text-white" : "bg-white border border-border text-foreground hover:bg-secondary"
+                      copied
+                        ? "bg-emerald-600 text-white"
+                        : "bg-white border border-border text-foreground hover:bg-secondary"
                     )}
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     {copied ? "Copied!" : "Copy"}
                   </button>
                 </div>
+
+                <p className="text-xs font-semibold text-foreground text-left mb-2">
+                  Dashboard Link
+                </p>
+                <div className="flex items-center gap-2 bg-muted rounded-xl px-4 py-3 mb-4">
+                  <p className="flex-1 text-sm text-foreground font-mono truncate text-left">
+                    {result.dashboardUrl}
+                  </p>
+                  <button
+                    onClick={copyDashboardUrl}
+                    className={clsx(
+                      "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold shrink-0 transition-all",
+                      dashboardCopied
+                        ? "bg-emerald-600 text-white"
+                        : "bg-white border border-border text-foreground hover:bg-secondary"
+                    )}
+                  >
+                    {dashboardCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {dashboardCopied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
                 <button
-                  onClick={() => navigate(`/assess/${result.orgId}`)}
+                  onClick={() => navigate(`/assess/${result.surveyKey}`)}
                   className="w-full rounded-xl py-3 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:opacity-90"
                   style={{ backgroundColor: "#3292BE" }}
                 >
