@@ -1,0 +1,11 @@
+{
+  "title": "HTM SWOT Analysis",
+  "description": "This survey web app enables organizations to collect anonymous feedback through tailored questionnaires, generating unique dashboards for insightful data analysis.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -244,7 +244,7 @@ export default function HomePage() {
               { label: "Threats", desc: "External pressures you need to navigate", color: "bg-orange-50 border-orange-200 text-orange-800" },
             ].map((item) => (
               <div key={item.label} className={clsx("rounded-2xl border p-5 shadow-md", item.color)}>
-                <p className="font-bold text-sm mb-1">{item.label}</p>
+                <p className="font-bold text-base leading-tight mb-1">{item.label}</p>
                 <p className="text-xs opacity-70 leading-relaxed">{item.desc}</p>
               </div>
             ))}
