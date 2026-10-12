@@ -49,31 +49,33 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.get("/api/db-test", async (_req, res) => {
-  try {
-    const pool = await getDatabasePool();
+if (!environment.isProduction) {
+  app.get("/api/db-test", async (_req, res) => {
+    try {
+      const pool = await getDatabasePool();
 
-    const result = await pool.request().query(`
-      SELECT
-        DB_NAME() AS DatabaseName,
-        @@SERVERNAME AS ServerName,
-        COUNT(*) AS StatementCount
-      FROM dbo.Statements;
-    `);
+      const result = await pool.request().query(`
+        SELECT
+          DB_NAME() AS DatabaseName,
+          @@SERVERNAME AS ServerName,
+          COUNT(*) AS StatementCount
+        FROM dbo.Statements;
+      `);
 
-    res.status(200).json({
-      status: "ok",
-      database: result.recordset[0]
-    });
-  } catch (error) {
-    console.error("Database connection failed:", error);
+      res.status(200).json({
+        status: "ok",
+        database: result.recordset[0]
+      });
+    } catch (error) {
+      console.error("Database connection failed:", error);
 
-    res.status(500).json({
-      status: "error",
-      message: "Database connection failed"
-    });
-  }
-});
+      res.status(500).json({
+        status: "error",
+        message: "Database connection failed"
+      });
+    }
+  });
+}
 
 app.use((_req, res) => {
   res.status(404).json({

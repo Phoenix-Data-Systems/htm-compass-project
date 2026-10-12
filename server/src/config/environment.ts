@@ -29,9 +29,23 @@ function parseCorsOrigins(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
+const nodeEnvironment =
+  process.env.NODE_ENV?.trim().toLowerCase() ?? "development";
+
+const isProduction = nodeEnvironment === "production";
+
 export const environment = {
+  nodeEnvironment,
+  isProduction,
   port: parsePort(process.env.PORT),
-  dbServer: requireEnvironmentVariable("DB_SERVER"),
-  dbDatabase: requireEnvironmentVariable("DB_DATABASE"),
+
+  dbServer: requireEnvironmentVariable(
+    isProduction ? "SQL_SERVER" : "DB_SERVER"
+  ),
+
+  dbDatabase: requireEnvironmentVariable(
+    isProduction ? "SQL_DATABASE" : "DB_DATABASE"
+  ),
+
   corsOrigins: parseCorsOrigins(process.env.CORS_ORIGINS)
 };
