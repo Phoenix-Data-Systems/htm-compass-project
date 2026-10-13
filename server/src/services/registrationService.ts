@@ -1,7 +1,9 @@
-import {
+﻿import {
   createOrganizationRegistration,
   type CreateOrganizationRegistrationInput
 } from "../repositories/registrationRepository.js";
+import { environment } from "../config/environment.js";
+import { sendSurveyInvitation } from "./emailService.js";
 
 export interface RegisterOrganizationInput {
   organization: string;
@@ -22,6 +24,15 @@ export interface RegisterOrganizationResult {
 const CURRENT_SURVEY_ID = 1;
 const SCHEDULED_STATUS_ID = 1;
 
+function isEmailConfigured(): boolean {
+  return Boolean(
+    environment.smtpHost &&
+      environment.smtpPort &&
+      environment.mailFrom &&
+      environment.appBaseUrl
+  );
+}
+
 export async function registerOrganization(
   input: RegisterOrganizationInput
 ): Promise<RegisterOrganizationResult> {
@@ -31,5 +42,20 @@ export async function registerOrganization(
     initialStatusId: SCHEDULED_STATUS_ID
   };
 
-  return createOrganizationRegistration(registrationInput);
+  const registration = await createOrganizationRegistration(registrationInput);
+
+  if (isEmailConfigured()) {
+    try {
+      await sendSurveyInvitation({
+        recipientEmail: input.contactEmail,
+        recipientName: input.contactName,
+        organizationName: input.organization,
+        surveyKey: registration.surveyKey
+      });
+    } catch (error) {
+      console.error("Failed to send survey invitation email", error);
+    }
+  }
+
+  return registration;
 }
