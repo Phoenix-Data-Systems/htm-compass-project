@@ -211,9 +211,6 @@ export interface ParticipantInfo {
 }
 
 export interface SurveyRecord {
-  surveyKey: string;
-  participantId: number;
-  facilityId: number;
   participant: ParticipantInfo;
   answers: Record<string, number>;
   completed: boolean;
