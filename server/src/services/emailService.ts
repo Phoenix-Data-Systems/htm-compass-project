@@ -1,5 +1,8 @@
-﻿import { EmailClient } from "@azure/communication-email";
-import { DefaultAzureCredential } from "@azure/identity";
+﻿import {
+  EmailClient,
+  KnownEmailSendStatus
+} from "@azure/communication-email";
+import { ManagedIdentityCredential } from "@azure/identity";
 
 import { environment } from "../config/environment.js";
 
@@ -40,7 +43,7 @@ function getEmailClient(): EmailClient {
 
   return new EmailClient(
     environment.acsEmailEndpoint,
-    new DefaultAzureCredential()
+    new ManagedIdentityCredential()
   );
 }
 
@@ -89,5 +92,9 @@ export async function sendSurveyInvitation(
     }
   });
 
-  await poller.pollUntilDone();
+  const result = await poller.pollUntilDone();
+
+  if (result.status !== KnownEmailSendStatus.Succeeded) {
+    throw new Error("Azure Communication Services email send failed");
+  }
 }
