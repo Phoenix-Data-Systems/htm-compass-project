@@ -1,4 +1,4 @@
-function requireEnvironmentVariable(name: string): string {
+﻿function requireEnvironmentVariable(name: string): string {
   const value = process.env[name]?.trim();
 
   if (!value) {
@@ -20,20 +20,6 @@ function parsePort(value: string | undefined): number {
 
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
     throw new Error("PORT must be a valid TCP port");
-  }
-
-  return port;
-}
-
-function parseOptionalPort(value: string | undefined): number | undefined {
-  if (!value?.trim()) {
-    return undefined;
-  }
-
-  const port = Number(value);
-
-  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-    throw new Error("SMTP_PORT must be a valid TCP port");
   }
 
   return port;
@@ -70,10 +56,7 @@ export const environment = {
 
   corsOrigins: parseCorsOrigins(process.env.CORS_ORIGINS),
 
-  smtpHost: getOptionalEnvironmentVariable("SMTP_HOST"),
-  smtpPort: parseOptionalPort(process.env.SMTP_PORT),
-  smtpUser: getOptionalEnvironmentVariable("SMTP_USER"),
-  smtpPassword: getOptionalEnvironmentVariable("SMTP_PASSWORD"),
-  mailFrom: getOptionalEnvironmentVariable("MAIL_FROM"),
-  appBaseUrl: getOptionalEnvironmentVariable("APP_BASE_URL")
+  appBaseUrl: getOptionalEnvironmentVariable("APP_BASE_URL"),
+  acsEmailEndpoint: getOptionalEnvironmentVariable("ACS_EMAIL_ENDPOINT"),
+  acsEmailSender: getOptionalEnvironmentVariable("ACS_EMAIL_SENDER")
 };

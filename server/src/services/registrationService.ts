@@ -26,10 +26,9 @@ const SCHEDULED_STATUS_ID = 1;
 
 function isEmailConfigured(): boolean {
   return Boolean(
-    environment.smtpHost &&
-      environment.smtpPort &&
-      environment.mailFrom &&
-      environment.appBaseUrl
+    environment.appBaseUrl &&
+      environment.acsEmailEndpoint &&
+      environment.acsEmailSender
   );
 }
 
@@ -52,8 +51,10 @@ export async function registerOrganization(
         organizationName: input.organization,
         surveyKey: registration.surveyKey
       });
-    } catch (error) {
-      console.error("Failed to send survey invitation email", error);
+    } catch {
+      console.error("Failed to send survey invitation email", {
+        organizationId: registration.organizationId
+      });
     }
   }
 

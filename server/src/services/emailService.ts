@@ -1,4 +1,5 @@
-import nodemailer from "nodemailer";
+﻿import { EmailClient } from "@azure/communication-email";
+import { DefaultAzureCredential } from "@azure/identity";
 
 import { environment } from "../config/environment.js";
 
@@ -9,32 +10,17 @@ export interface SendSurveyInvitationInput {
   surveyKey: string;
 }
 
-function getTransporter() {
-  if (!environment.smtpHost || !environment.smtpPort) {
-    throw new Error("SMTP configuration is incomplete");
-  }
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
-  const hasUsername = Boolean(environment.smtpUser);
-  const hasPassword = Boolean(environment.smtpPassword);
-
-  if (hasUsername !== hasPassword) {
-    throw new Error(
-      "SMTP_USER and SMTP_PASSWORD must either both be configured or both be omitted"
-    );
-  }
-
-  return nodemailer.createTransport({
-    host: environment.smtpHost,
-    port: environment.smtpPort,
-    secure: environment.smtpPort === 465,
-    auth:
-      environment.smtpUser && environment.smtpPassword
-        ? {
-            user: environment.smtpUser,
-            pass: environment.smtpPassword
-          }
-        : undefined
-  });
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
 }
 
 function getSurveyUrl(surveyKey: string): string {
@@ -47,36 +33,61 @@ function getSurveyUrl(surveyKey: string): string {
   return `${baseUrl}/assess/${encodeURIComponent(surveyKey)}`;
 }
 
+function getEmailClient(): EmailClient {
+  if (!environment.acsEmailEndpoint) {
+    throw new Error("ACS_EMAIL_ENDPOINT is not configured");
+  }
+
+  return new EmailClient(
+    environment.acsEmailEndpoint,
+    new DefaultAzureCredential()
+  );
+}
+
 export async function sendSurveyInvitation(
   input: SendSurveyInvitationInput
 ): Promise<void> {
-  if (!environment.mailFrom) {
-    throw new Error("MAIL_FROM is not configured");
+  if (!environment.acsEmailSender) {
+    throw new Error("ACS_EMAIL_SENDER is not configured");
   }
 
+  const recipientName = sanitizeHeaderValue(input.recipientName);
+  const organizationName = sanitizeHeaderValue(input.organizationName);
   const surveyUrl = getSurveyUrl(input.surveyKey);
-  const transporter = getTransporter();
 
-  await transporter.sendMail({
-    from: environment.mailFrom,
-    to: input.recipientEmail,
-    subject: `${input.organizationName} SWOT Assessment`,
-    text: [
-      `Hello ${input.recipientName},`,
-      "",
-      `Your SWOT assessment for ${input.organizationName} is ready.`,
-      "",
-      `Survey link: ${surveyUrl}`,
-      "",
-      "You can share this link with the participants who will complete the assessment."
-    ].join("\n"),
-    html: `
-      <p>Hello ${input.recipientName},</p>
-      <p>Your SWOT assessment for <strong>${input.organizationName}</strong> is ready.</p>
-      <p>
-        <a href="${surveyUrl}">Open SWOT Assessment</a>
-      </p>
-      <p>You can share this link with the participants who will complete the assessment.</p>
-    `
+  const client = getEmailClient();
+
+  const poller = await client.beginSend({
+    senderAddress: environment.acsEmailSender,
+    recipients: {
+      to: [
+        {
+          address: input.recipientEmail,
+          displayName: recipientName
+        }
+      ]
+    },
+    content: {
+      subject: `${organizationName} SWOT Assessment`,
+      plainText: [
+        `Hello ${recipientName},`,
+        "",
+        `Your SWOT assessment for ${organizationName} is ready.`,
+        "",
+        `Survey link: ${surveyUrl}`,
+        "",
+        "You can share this link with the participants who will complete the assessment."
+      ].join("\n"),
+      html: `
+        <p>Hello ${escapeHtml(recipientName)},</p>
+        <p>Your SWOT assessment for <strong>${escapeHtml(organizationName)}</strong> is ready.</p>
+        <p>
+          <a href="${escapeHtml(surveyUrl)}">Open SWOT Assessment</a>
+        </p>
+        <p>You can share this link with the participants who will complete the assessment.</p>
+      `
+    }
   });
+
+  await poller.pollUntilDone();
 }
