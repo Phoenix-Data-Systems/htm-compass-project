@@ -32,6 +32,29 @@ function isEmailConfigured(): boolean {
   );
 }
 
+function getSafeErrorDetails(error: unknown): {
+  name?: string;
+  message: string;
+  code?: string;
+  statusCode?: number;
+} {
+  if (!(error instanceof Error)) {
+    return { message: "Unknown email delivery error" };
+  }
+
+  const details = error as Error & {
+    code?: string;
+    statusCode?: number;
+  };
+
+  return {
+    name: details.name,
+    message: details.message,
+    code: details.code,
+    statusCode: details.statusCode
+  };
+}
+
 export async function registerOrganization(
   input: RegisterOrganizationInput
 ): Promise<RegisterOrganizationResult> {
@@ -51,9 +74,10 @@ export async function registerOrganization(
         organizationName: input.organization,
         surveyKey: registration.surveyKey
       });
-    } catch {
+    } catch (error) {
       console.error("Failed to send survey invitation email", {
-        organizationId: registration.organizationId
+        organizationId: registration.organizationId,
+        ...getSafeErrorDetails(error)
       });
     }
   }
