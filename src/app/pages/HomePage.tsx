@@ -142,22 +142,22 @@ export default function HomePage() {
 
   const HOW_STEPS = [
     {
-      n: "01",
+      n: "1",
       title: "Administer to your team",
       body: "Share the assessment link with your entire HTM department. Every team member completes the survey independently — no coordination required.",
     },
     {
-      n: "02",
+      n: "2",
       title: "All submissions are anonymous",
       body: "Responses are fully anonymized before storage. Team members can answer honestly without concern for attribution.",
     },
     {
-      n: "03",
+      n: "3",
       title: "Results dashboard with real insights",
       body: "As submissions come in, a live dashboard aggregates responses into a SWOT analysis with scored categories, trend indicators, and domain breakdowns.",
     },
     {
-      n: "04",
+      n: "4",
       title: "Expert 1-hour action planning session",
       body: "An H.T.M. Consulting expert reviews your results with you, identifies your highest-priority opportunities, and co-creates a concrete roadmap for improvement.",
     },
