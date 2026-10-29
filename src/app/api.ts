@@ -202,6 +202,7 @@ export async function getSurvey(
 export interface SurveyResponseInput {
   statementId: number;
   value: number;
+  comment?: string;
 }
 
 interface SaveSurveyResponsesApiResponse {
@@ -240,6 +241,7 @@ export async function saveSurveyResponses(
 export interface ParticipantSurveyResponse {
   statementId: number;
   value: number;
+  comment?: string | null;
   responseDate: string;
 }
 

@@ -3,6 +3,7 @@ import { getDatabasePool, sql } from "../config/database.js";
 export interface SurveyAnswer {
   statementId: number;
   value: number;
+  comment?: string;
 }
 
 export interface SaveResponsesInput {
@@ -65,20 +66,24 @@ export async function saveResponses(
 
       DECLARE @IncomingResponses TABLE (
         StatementID int NOT NULL,
-        Value int NOT NULL
+        Value int NOT NULL,
+        CommentText nvarchar(100) NULL
       );
 
       INSERT INTO @IncomingResponses (
         StatementID,
-        Value
+        Value,
+        CommentText
       )
       SELECT
         StatementID,
-        Value
+        Value,
+        CommentText
       FROM OPENJSON(@responsesJson)
       WITH (
         StatementID int '$.statementId',
-        Value int '$.value'
+        Value int '$.value',
+        CommentText nvarchar(100) '$.comment'
       );
 
       IF EXISTS (
@@ -106,6 +111,11 @@ export async function saveResponses(
         UPDATE r
         SET
           r.Value = ir.Value,
+          r.Comments = CASE
+            WHEN ir.CommentText IS NOT NULL
+              THEN NULLIF(ir.CommentText, N'')
+            ELSE r.Comments
+          END,
           r.ResponseDT = GETDATE()
         FROM dbo.Responses r
         INNER JOIN @IncomingResponses ir
@@ -118,6 +128,7 @@ export async function saveResponses(
           ParticipantID,
           StatementID,
           Value,
+          Comments,
           ResponseDT
         )
         SELECT
@@ -125,6 +136,7 @@ export async function saveResponses(
           @participantId,
           ir.StatementID,
           ir.Value,
+          NULLIF(ir.CommentText, N''),
           GETDATE()
         FROM @IncomingResponses ir
         WHERE NOT EXISTS (
@@ -162,12 +174,14 @@ export async function saveResponses(
 export interface SavedResponse {
   statementId: number;
   value: number;
+  comment: string | null;
   responseDate: Date | null;
 }
 
 interface SavedResponseRow {
   StatementID: number | null;
   Value: number | null;
+  Comments: string | null;
   ResponseDT: Date | null;
 }
 
@@ -185,6 +199,7 @@ export async function getResponsesByParticipant(
       SELECT
         r.StatementID,
         r.Value,
+        r.Comments,
         r.ResponseDT
       FROM dbo.OrgSurveys os
       INNER JOIN dbo.Orgs o
@@ -220,6 +235,7 @@ export async function getResponsesByParticipant(
     .map((row) => ({
       statementId: Number(row.StatementID),
       value: Number(row.Value),
+      comment: row.Comments,
       responseDate: row.ResponseDT
     }));
 }

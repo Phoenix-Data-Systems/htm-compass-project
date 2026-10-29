@@ -15,7 +15,8 @@ const responseSchema = z.object({
     .array(
       z.object({
         statementId: z.number().int().positive(),
-        value: z.number().int().min(1).max(6)
+        value: z.number().int().min(1).max(6),
+        comment: z.string().max(100).optional()
       })
     )
     .min(1)

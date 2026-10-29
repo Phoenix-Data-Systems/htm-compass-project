@@ -58,6 +58,7 @@ export default function SurveyPage() {
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
   const [unanswered, setUnanswered] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -99,8 +100,12 @@ export default function SurveyPage() {
           ...r.answers
         };
 
+        const restoredComments: Record<string, string> = {};
+
         for (const response of savedResponses) {
-          restoredAnswers[String(response.statementId)] = response.value;
+          const questionId = String(response.statementId);
+          restoredAnswers[questionId] = response.value;
+          restoredComments[questionId] = response.comment ?? "";
         }
 
         const totalPages = Math.ceil(
@@ -138,6 +143,7 @@ export default function SurveyPage() {
         setQuestions(orderedQuestions);
         setRecord(syncedRecord);
         setAnswers(restoredAnswers);
+        setComments(restoredComments);
         setPageIndex(resumePage);
       } catch (error) {
         console.error("Unable to load survey:", error);
@@ -203,7 +209,8 @@ export default function SurveyPage() {
     try {
       const pageResponses = pageQuestions.map((q) => ({
         statementId: Number(q.id),
-        value: answers[q.id]
+        value: answers[q.id],
+        comment: comments[q.id] ?? ""
       }));
 
       await saveSurveyResponses(
@@ -250,7 +257,8 @@ export default function SurveyPage() {
     try {
       const allResponses = surveyQuestions.map((q) => ({
         statementId: Number(q.id),
-        value: answers[q.id]
+        value: answers[q.id],
+        comment: comments[q.id] ?? ""
       }));
 
       await saveSurveyResponses(
@@ -478,6 +486,35 @@ export default function SurveyPage() {
                     )}
                   </div>
                 </div>
+
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <label
+                      htmlFor={`comment-${q.id}`}
+                      className="text-sm font-medium text-foreground"
+                    >
+                      Comments (confidential)
+                    </label>
+                    <span className="text-xs text-muted-foreground">
+                      {(comments[q.id] ?? "").length}/100
+                    </span>
+                  </div>
+
+                  <textarea
+                    id={`comment-${q.id}`}
+                    value={comments[q.id] ?? ""}
+                    onChange={(event) =>
+                      setComments((previous) => ({
+                        ...previous,
+                        [q.id]: event.target.value.slice(0, 100)
+                      }))
+                    }
+                    maxLength={100}
+                    rows={3}
+                    placeholder="Enter comments (optional)..."
+                    className="w-full rounded-lg border border-border bg-white p-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+                  />
+                </div>
               </div>
             );
           })}
@@ -485,6 +522,23 @@ export default function SurveyPage() {
 
         {/* Continue / Submit */}
         <div className="mt-10 flex flex-col items-center gap-3">
+          {pageIndex > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setUnanswered([]);
+                setPageIndex((current) => Math.max(0, current - 1));
+                topRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start"
+                });
+              }}
+              disabled={submitting}
+              className="w-full max-w-md rounded-xl border border-border bg-white py-3 text-sm font-semibold text-foreground transition-all hover:bg-muted disabled:opacity-60"
+            >
+              Back to Previous Page
+            </button>
+          )}
           <button
             onClick={handleContinue}
             disabled={submitting}
