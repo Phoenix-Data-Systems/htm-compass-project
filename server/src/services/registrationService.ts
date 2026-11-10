@@ -1,9 +1,10 @@
-﻿import {
+import {
   createOrganizationRegistration,
   type CreateOrganizationRegistrationInput
 } from "../repositories/registrationRepository.js";
 import { environment } from "../config/environment.js";
 import { sendSurveyInvitation } from "./emailService.js";
+export { DuplicateRegistrationError } from "../repositories/registrationRepository.js";
 
 export interface RegisterOrganizationInput {
   organization: string;

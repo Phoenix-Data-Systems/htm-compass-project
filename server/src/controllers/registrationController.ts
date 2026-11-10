@@ -1,6 +1,9 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { registerOrganization } from "../services/registrationService.js";
+import {
+  registerOrganization,
+  DuplicateRegistrationError
+} from "../services/registrationService.js";
 
 const registrationSchema = z.object({
   organization: z.string().trim().min(1).max(100),
@@ -34,6 +37,13 @@ export async function createOrganizationRegistration(
       registration
     });
   } catch (error) {
+    if (error instanceof DuplicateRegistrationError) {
+      res.status(409).json({
+        status: "error",
+        message: "This organization and email are already registered for this survey. Please check your invitation email or contact support."
+      });
+      return;
+    }
     console.error("Organization registration failed:", error);
 
     res.status(500).json({

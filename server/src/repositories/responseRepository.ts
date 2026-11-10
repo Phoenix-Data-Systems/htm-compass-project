@@ -67,7 +67,7 @@ export async function saveResponses(
       DECLARE @IncomingResponses TABLE (
         StatementID int NOT NULL,
         Value int NOT NULL,
-        CommentText nvarchar(100) NULL
+        CommentText nvarchar(250) NULL
       );
 
       INSERT INTO @IncomingResponses (
@@ -83,7 +83,7 @@ export async function saveResponses(
       WITH (
         StatementID int '$.statementId',
         Value int '$.value',
-        CommentText nvarchar(100) '$.comment'
+        CommentText nvarchar(250) '$.comment'
       );
 
       IF EXISTS (

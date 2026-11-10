@@ -116,6 +116,7 @@ export async function getDashboardQuestions(
           INNER JOIN dbo.Responses r
               ON r.OrgSurveyID = sc.OrgSurveyID
              AND r.StatementID = s.ID
+             AND r.Value BETWEEN 1 AND 6
           INNER JOIN CompletedParticipants cp
               ON cp.OrgSurveyID = r.OrgSurveyID
              AND cp.ParticipantID = r.ParticipantID

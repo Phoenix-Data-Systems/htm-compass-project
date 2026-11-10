@@ -40,9 +40,9 @@ function ScaleButton({
       data-selected={selected}
       onClick={onClick}
       className={clsx(
-        "w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 font-semibold text-sm transition-all duration-150",
+        "w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 font-semibold text-sm transition-all duration-150",
         "border-border text-foreground bg-white",
-        colors[value - 1],
+        value === 0 ? "hover:border-slate-400 hover:bg-slate-50 data-[selected=true]:bg-slate-600 data-[selected=true]:border-slate-600 data-[selected=true]:text-white" : colors[value - 1],
         "focus:outline-none focus:ring-2 focus:ring-primary/30"
       )}
     >
@@ -400,12 +400,12 @@ export default function SurveyPage() {
         {/* Scale legend */}
         <div className="bg-white rounded-xl border border-border px-4 py-3 mb-6 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
           <div className="flex gap-1.5 shrink-0">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
+            {[0, 1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
                 className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] font-bold"
                 style={{
-                  backgroundColor: ["#dc2626", "#f97316", "#eab308", "#65a30d", "#16a34a", "#15803d"][n - 1],
+                  backgroundColor: n === 0 ? "#64748b" : ["#dc2626", "#f97316", "#eab308", "#65a30d", "#16a34a", "#15803d"][n - 1],
                 }}
               >
                 {n}
@@ -413,9 +413,13 @@ export default function SurveyPage() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            1–3 = Opportunity for Improvement &nbsp;·&nbsp; 4–6 = Exceptional
+            0 = Not Applicable &nbsp;&middot;&nbsp; 1–3 = Opportunity for Improvement &nbsp;·&nbsp; 4–6 = Exceptional
           </p>
         </div>
+
+        <p className="text-xs text-muted-foreground mb-5">
+          If a statement does not apply to your role or you do not have enough knowledge to rate it, select 0 (Not Applicable). N/A responses are excluded from aggregated scoring.
+        </p>
 
         {/* Questions */}
         <div className="flex flex-col gap-5">
@@ -454,8 +458,8 @@ export default function SurveyPage() {
                       >
                         Opportunity for Improvement
                       </span>
-                      <div className="flex flex-1 justify-center gap-2">
-                        {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <div className="flex flex-1 justify-center gap-1 sm:gap-2">
+                        {[0, 1, 2, 3, 4, 5, 6].map((n) => (
                           <ScaleButton
                             key={n}
                             value={n}
@@ -479,9 +483,9 @@ export default function SurveyPage() {
                       <p className="text-xs text-muted-foreground text-center">
                         Selected:{" "}
                         <span className="font-semibold text-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>
-                          {val}
+                          {val === 0 ? "Not Applicable" : val}
                         </span>{" "}
-                        / 6
+                        {val !== 0 && "/ 6"}
                       </p>
                     )}
                   </div>
@@ -496,7 +500,7 @@ export default function SurveyPage() {
                       Comments (confidential)
                     </label>
                     <span className="text-xs text-muted-foreground">
-                      {(comments[q.id] ?? "").length}/100
+                      {(comments[q.id] ?? "").length}/250
                     </span>
                   </div>
 
@@ -509,7 +513,7 @@ export default function SurveyPage() {
                         [q.id]: event.target.value.slice(0, 100)
                       }))
                     }
-                    maxLength={100}
+                    maxLength={250}
                     rows={3}
                     placeholder="Enter comments (optional)..."
                     className="w-full rounded-lg border border-border bg-white p-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-y"

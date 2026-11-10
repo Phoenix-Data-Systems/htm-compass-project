@@ -154,7 +154,10 @@ export default function HomePage() {
 
       setErrors((current) => ({
         ...current,
-        organization: "Unable to register organization. Please try again."
+        organization:
+          error instanceof Error && error.message.includes("already registered")
+            ? "This registration may already exist. Please check your invitation email or contact support."
+            : "Unable to register organization. Please try again."
       }));
     } finally {
       setSubmitting(false);
